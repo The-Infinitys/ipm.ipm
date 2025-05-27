@@ -2,7 +2,9 @@
 name = "ipm"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [dependencies]
 ipak = { git = "https://github.com/The-Infinitys/ipm.ipak.git" }
 cmd_arg = { git = "https://github.com/The-Infinitys/rust.cmd-arg.git" }
+colored = "3.0.0"
