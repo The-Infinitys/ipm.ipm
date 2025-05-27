@@ -1,6 +1,10 @@
 use cmd_arg::cmd_arg;
 use ipak::dprintln;
-use ipak::modules::{messages, pkg, project, system};
+use ipm::modules::messages as ipm_messages;
+use ipak::modules::messages as ipak_messages;
+use ipak::modules::pkg as ipak_pkg;
+use ipak::modules::project as ipak_project;
+use ipak::modules::system as ipak_system;
 fn main() -> Result<(), std::io::Error> {
     let command_data = cmd_arg::get();
     dprintln!("{}", command_data);
@@ -39,15 +43,13 @@ fn main() -> Result<(), std::io::Error> {
     };
 
     match sub_command {
-        SubCommand::Help => messages::help(sub_opts)?,
-        SubCommand::Version => messages::version()?,
-        SubCommand::Manual => messages::manual()?,
-        SubCommand::Project => project::project(sub_opts)?,
-        SubCommand::System => system::system(sub_opts)?,
-        SubCommand::Package => pkg::pkg(sub_opts)?,
-        SubCommand::Unknown => messages::unknown()?,
+        SubCommand::Help => ipm_messages::help(sub_opts)?,
+        SubCommand::Version => ipm_messages::version()?,
+        SubCommand::Manual => ipm_messages::manual()?,
+        SubCommand::Project => ipak_project::project(sub_opts)?,
+        SubCommand::System => ipak_system::system(sub_opts)?,
+        SubCommand::Package => ipak_pkg::pkg(sub_opts)?,
+        SubCommand::Unknown => ipak_messages::unknown()?,
     }
-
-    println!("Hello, world!");
     Ok(())
 }
