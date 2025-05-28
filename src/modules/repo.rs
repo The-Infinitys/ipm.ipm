@@ -2,8 +2,9 @@ use ipak::modules::pkg::PackageData;
 use std::fmt;
 use tokio::io;
 
-mod apt;
-mod ipm;
+mod types;
+
+use types::{apt, ipm};
 
 pub struct RepoIndex {
     repo_type: RepoType,
