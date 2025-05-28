@@ -8,3 +8,7 @@ build = "build.rs"
 ipak = { git = "https://github.com/The-Infinitys/ipm.ipak.git" }
 cmd_arg = { git = "https://github.com/The-Infinitys/rust.cmd-arg.git" }
 colored = "3.0.0"
+deb822-lossless = "0.2.6"
+flate2 = "1.1.1"
+reqwest = "0.12.16"
+tokio = { version = "1.45.1", features = ["macros"] }
