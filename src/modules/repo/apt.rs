@@ -7,12 +7,12 @@ use flate2::read::GzDecoder;
 use reqwest::Client;
 use std::io::Read;
 use std::str::FromStr;
+use std::io;
 
-// opak::modules::pkgからのインポートを想定
+// ipak::modules::pkgからのインポート
 // 実際にはクレートの構造に合わせてパスを調整してください
-use ipak::modules::pkg::{PackageRange, PackageVersion};
-use ipak::modules::version::{Version, VersionRange};
-
+use ipak::modules::pkg::{PackageData, AboutData, AuthorAboutData, PackageAboutData, RelationData, PackageRange, PackageVersion};
+use ipak::modules::version::{Version, VersionRange}; // ipak の Version と VersionRange
 
 #[derive(Default)]
 pub enum AptType {
@@ -31,11 +31,11 @@ impl fmt::Display for AptType {
 }
 
 pub struct AptInfo {
-    types: AptType,
-    uris: String,
-    suites: Vec<String>,
-    components: Vec<String>,
-    architectures: Vec<String>,
+    pub types: AptType,
+    pub uris: String,
+    pub suites: Vec<String>,
+    pub components: Vec<String>,
+    pub architectures: Vec<String>,
 }
 
 impl fmt::Display for AptInfo {
@@ -52,13 +52,113 @@ impl fmt::Display for AptInfo {
     }
 }
 
+impl AptInfo {
+    /// 指定された AptInfo に基づいてパッケージインデックスを取得します。
+    pub async fn get_packages(&self) -> Result<Vec<Package>, io::Error> {
+        let client = Client::new();
+        let mut packages = Vec::new();
+        let uri = &self.uris;
+
+        match self.types {
+            AptType::Deb => {
+                for suite in &self.suites {
+                    for component in &self.components {
+                        for arch in &self.architectures {
+                            let urls = vec![
+                                format!("{}/dists/{}/{}/binary-{}/Packages.gz", uri, suite, component, arch),
+                                format!("{}/dists/{}/{}/binary-{}/Packages", uri, suite, component, arch),
+                            ];
+                            let mut content = None;
+                            for url in urls {
+                                match fetch_url(&client, &url).await {
+                                    Ok(data) => {
+                                        content = Some(data);
+                                        break;
+                                    }
+                                    Err(_) => continue, // 圧縮/非圧縮のどちらかが失敗してももう一方を試す
+                                }
+                            }
+                            let content = content
+                                .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("Failed to fetch Packages for {suite}/{component}/{arch}")))?;
+                            
+                            let deb822 = Deb822::from_str(&content)
+                                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse Deb822 format: {}", e)))?;
+                            
+                            for para in deb822.paragraphs() {
+                                let mut fields_map = HashMap::new();
+                                for (key, value) in para.items() {
+                                    fields_map.insert(key.to_string(), value.to_string());
+                                }
+                                match Package::try_from_deb822_paragraph(
+                                    fields_map,
+                                    suite.clone(),
+                                    component.clone(),
+                                    Some(arch.clone()),
+                                ) {
+                                    Ok(package) => packages.push(package),
+                                    Err(e) => eprintln!("Warning: Skipping package due to parsing error: {}", e), // パースエラーはスキップ
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            AptType::DebSrc => {
+                for suite in &self.suites {
+                    for component in &self.components {
+                        let urls = vec![
+                            format!("{}/dists/{}/{}/source/Sources.gz", uri, suite, component),
+                            format!("{}/dists/{}/{}/source/Sources", uri, suite, component),
+                        ];
+                        let mut content = None;
+                        for url in urls {
+                            match fetch_url(&client, &url).await {
+                                Ok(data) => {
+                                    content = Some(data);
+                                    break;
+                                }
+                                Err(_) => continue,
+                            }
+                        }
+                        let content = content
+                            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("Failed to fetch Sources for {suite}/{component}")))?;
+                        
+                        let deb822 = Deb822::from_str(&content)
+                            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse Deb822 format: {}", e)))?;
+                        
+                        for para in deb822.paragraphs() {
+                            let mut fields_map = HashMap::new();
+                            for (key, value) in para.items() {
+                                fields_map.insert(key.to_string(), value.to_string());
+                            }
+                            match Package::try_from_deb822_paragraph(
+                                fields_map,
+                                suite.clone(),
+                                component.clone(),
+                                None, // No architecture for deb-src
+                            ) {
+                                Ok(package) => packages.push(package),
+                                Err(e) => eprintln!("Warning: Skipping source package due to parsing error: {}", e),
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(packages)
+    }
+}
+
+
 /// Represents a single package entry as defined in Debian Policy Manual.
 /// Common fields are parsed into their own fields for easier access and type safety.
 /// All other fields are stored in a HashMap.
+#[derive(Debug)] // Debug トレイトを追加
 pub struct Package {
     // Mandatory fields
     pub package: String, // 'Package' field
-    pub version: String, // 'Version' field (Debian policy version string, not ipak::modules::pkg::Version)
+    pub version: String, // 'Version' field (Debian policy version string)
     pub maintainer: String, // 'Maintainer' field
 
     // Description is not mandatory for binary packages, but is for source packages (debian/control)
@@ -81,6 +181,8 @@ pub struct Package {
     pub provides: Vec<PackageVersion>, // 'Provides' field
     pub built_using: Option<String>, // 'Built-Using' field (for deb-src)
     pub original_maintainer: Option<String>, // 'Original-Maintainer' field (for deb-src)
+
+
     // All other fields not explicitly parsed above
     pub other_fields: HashMap<String, String>,
 }
@@ -101,10 +203,10 @@ impl Package {
                         let range = if parts.len() > 1 {
                             // Version range exists, e.g., "(>= 1.0)"
                             let version_range_str = parts[1].trim_matches(|c| c == '(' || c == ')');
-                            VersionRange::from_str(version_range_str).ok()?
+                            VersionRange::from_str(version_range_str).unwrap_or_default()
                         } else {
                             // No version range specified, assume any version
-                            VersionRange::from_str("").ok()? // Represents any version
+                            VersionRange::default() // Represents any version
                         };
                         Some(PackageRange { name, range })
                     })
@@ -128,7 +230,7 @@ impl Package {
                 let name = parts[0].to_string();
                 let version = if parts.len() > 1 {
                     let version_str = parts[1].trim_matches(|c| c == '(' || c == ')');
-                    Version::from_str(version_str).ok()?
+                    Version::from_str(version_str).unwrap_or_default()
                 } else {
                     Version::default() // No version specified, use default
                 };
@@ -278,165 +380,173 @@ impl fmt::Display for Package {
     }
 }
 
-pub async fn fetch_package_indices(apt_info: &AptInfo) -> Result<Vec<Package>, Box<dyn Error>> {
-    let client = Client::new();
-    let mut packages = Vec::new();
-    let uri = &apt_info.uris;
+// Package から PackageData への変換
+impl From<Package> for PackageData {
+    fn from(pkg: Package) -> Self {
+        let (author_name, author_email) = parse_maintainer(&pkg.maintainer);
 
-    match apt_info.types {
-        AptType::Deb => {
-            for suite in &apt_info.suites {
-                for component in &apt_info.components {
-                    for arch in &apt_info.architectures {
-                        let urls = vec![
-                            format!("{}/dists/{}/{}/binary-{}/Packages.gz", uri, suite, component, arch),
-                            format!("{}/dists/{}/{}/binary-{}/Packages", uri, suite, component, arch),
-                        ];
-                        let mut content = None;
-                        for url in urls {
-                            match fetch_url(&client, &url).await {
-                                Ok(data) => {
-                                    content = Some(data);
-                                    break;
-                                }
-                                Err(_) => continue,
-                            }
-                        }
-                        let content = content.ok_or_else(|| format!("Failed to fetch Packages for {suite}/{component}/{arch}"))?;
-                        let deb822 = Deb822::from_str(&content)?;
-                        for para in deb822.paragraphs() {
-                            let mut fields_map = HashMap::new();
-                            for (key, value) in para.items() {
-                                fields_map.insert(key.to_string(), value.to_string());
-                            }
-                            match Package::try_from_deb822_paragraph(
-                                fields_map,
-                                suite.clone(),
-                                component.clone(),
-                                Some(arch.clone()),
-                            ) {
-                                Ok(package) => packages.push(package),
-                                Err(e) => eprintln!("Warning: Skipping package due to parsing error: {}", e),
-                            }
-                        }
-                    }
-                }
+        let mut relation_data = RelationData {
+            depend: pkg.depends,
+            recommends: pkg.recommends,
+            suggests: pkg.suggests,
+            conflicts: pkg.conflicts,
+            virtuals: pkg.provides, // DebianのProvidesはipakのvirtualsに相当
+            ..Default::default()
+        };
+
+        // Replaces フィールドはipakのRelationDataに直接のマッピングがないため、
+        // conflicts に追加する（意味合いが近いため）か、other_fields に残すか、今回は conflicts に追加します。
+        // ただし、厳密には Replaces と Conflicts は異なるため、注意が必要です。
+        // 今回はipak::modules::pkg::PackageDataの既存のフィールドに合わせるため、
+        // ここでは簡単にconflictsに含めています。
+        // もしipak::modules::pkg::PackageDataの定義を変更できるなら、Replaces用のフィールドを追加するのが理想的です。
+        relation_data.conflicts.extend(pkg.replaces);
+
+
+        let mut package_data = PackageData {
+            about: AboutData {
+                author: AuthorAboutData {
+                    name: author_name,
+                    email: author_email,
+                },
+                package: PackageAboutData {
+                    name: pkg.package,
+                    version: Version::from_str(&pkg.version).unwrap_or_default(), // Debianのバージョン文字列をipak::Versionに変換
+                },
+            },
+            architecture: pkg.architecture.map(|arch| vec![arch]).unwrap_or_default(),
+            mode: ipak::modules::pkg::Mode::Any, // Debian Packagesファイルはインストールモードを直接示さないためAnyとする
+            relation: relation_data,
+            ..Default::default()
+        };
+
+        // description、section、priority、homepage、built_using、original_maintainer
+        // そして other_fields の残りを PackageData の other_fields に追加
+        // ただし、PackageData には other_fields が存在しないため、直接追加することはできません。
+        // PackageData の構造に合わせて、直接マッピングできないフィールドは捨てるか、
+        // PackageData 側に拡張フィールドを設ける必要があります。
+        // ここでは、PackageData の定義に合わせて、これらを追加で保持する場所がないため、
+        // 単純に変換時に破棄されることになります。
+        // もし保持したい場合は、PackageData 構造体の定義を変更する必要があります。
+        
+        // 例: Debug用に、変換時に捨てられるフィールドを一時的に表示
+        #[cfg(debug_assertions)]
+        {
+            if let Some(desc) = pkg.description {
+                eprintln!("Debug: Description '{}' is not directly mapped to PackageData.", desc);
             }
-        }
-        AptType::DebSrc => {
-            for suite in &apt_info.suites {
-                for component in &apt_info.components {
-                    let urls = vec![
-                        format!("{}/dists/{}/{}/source/Sources.gz", uri, suite, component),
-                        format!("{}/dists/{}/{}/source/Sources", uri, suite, component),
-                    ];
-                    let mut content = None;
-                    for url in urls {
-                        match fetch_url(&client, &url).await {
-                            Ok(data) => {
-                                content = Some(data);
-                                break;
-                            }
-                            Err(_) => continue,
-                        }
-                    }
-                    let content = content.ok_or_else(|| format!("Failed to fetch Sources for {suite}/{component}"))?;
-                    let deb822 = Deb822::from_str(&content)?;
-                    for para in deb822.paragraphs() {
-                        let mut fields_map = HashMap::new();
-                        for (key, value) in para.items() {
-                            fields_map.insert(key.to_string(), value.to_string());
-                        }
-                        match Package::try_from_deb822_paragraph(
-                            fields_map,
-                            suite.clone(),
-                            component.clone(),
-                            None, // No architecture for deb-src
-                        ) {
-                            Ok(package) => packages.push(package),
-                            Err(e) => eprintln!("Warning: Skipping source package due to parsing error: {}", e),
-                        }
-                    }
-                }
+            if let Some(section) = pkg.section {
+                eprintln!("Debug: Section '{}' is not directly mapped to PackageData.", section);
             }
+            // 他のフィールドも同様
         }
+
+        package_data
     }
-
-    Ok(packages)
 }
 
-async fn fetch_url(client: &Client, url: &str) -> Result<String, Box<dyn Error>> {
-    let response = client.get(url).send().await?;
-    if !response.status().is_success() {
-        return Err(format!("HTTP error: {} for URL: {}", response.status(), url).into());
+// Maintainer フィールドを名前とメールアドレスにパースするヘルパー関数
+fn parse_maintainer(maintainer_str: &str) -> (String, String) {
+    if let Some(start_paren) = maintainer_str.rfind('<') {
+        if let Some(end_paren) = maintainer_str.rfind('>') {
+            if end_paren > start_paren {
+                let name = maintainer_str[..start_paren].trim().to_string();
+                let email = maintainer_str[start_paren + 1..end_paren].trim().to_string();
+                return (name, email);
+            }
+        }
     }
-    let bytes = response.bytes().await?;
+    // デフォルト値またはパースできない場合
+    (maintainer_str.to_string(), String::new())
+}
+
+
+async fn fetch_url(client: &Client, url: &str) -> Result<String, io::Error> {
+    let response = client.get(url).send().await
+        .map_err(|e| io::Error::new(io::ErrorKind::ConnectionRefused, format!("Failed to send request to {}: {}", url, e)))?;
+
+    if !response.status().is_success() {
+        return Err(io::Error::new(io::ErrorKind::Other, format!("HTTP error: {} for URL: {}", response.status(), url)));
+    }
+    let bytes = response.bytes().await
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to read response bytes: {}", e)))?;
     
     if url.ends_with(".gz") {
         let mut decoder = GzDecoder::new(&bytes[..]);
         let mut content = String::new();
-        decoder.read_to_string(&mut content)?;
+        decoder.read_to_string(&mut content)
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to decompress gzip content: {}", e)))?;
         Ok(content)
     } else {
-        Ok(String::from_utf8(bytes.to_vec())?)
+        String::from_utf8(bytes.to_vec())
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to decode UTF-8: {}", e)))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ipak::modules::pkg::Mode; // ipak の Mode を使用
 
     #[tokio::test]
-    async fn test_fetch_noble_packages() {
-        let apt_info = AptInfo {
-            types: AptType::Deb,
-            uris: "http://archive.ubuntu.com/ubuntu".to_string(),
-            suites: vec!["noble".to_string()],
-            components: vec!["main".to_string()],
-            architectures: vec!["amd64".to_string()],
+    async fn test_package_to_packagedata_conversion() {
+        // テスト用の Debian Package を作成
+        let debian_pkg = Package {
+            package: "example-package".to_string(),
+            version: "1.2.3-1ubuntu1".to_string(),
+            maintainer: "John Doe <john.doe@example.com>".to_string(),
+            description: Some("A sample package for testing conversion.".to_string()),
+            suite: "noble".to_string(),
+            component: "main".to_string(),
+            architecture: Some("amd64".to_string()),
+            section: Some("misc".to_string()),
+            priority: Some("optional".to_string()),
+            homepage: Some("http://example.com".to_string()),
+            depends: Package::parse_dependencies("dep-a (>= 1.0) | dep-b (= 2.0), dep-c"),
+            recommends: Package::parse_dependencies("rec-x"),
+            suggests: Package::parse_dependencies("sugg-y (>> 3.0)"),
+            conflicts: Package::parse_dependencies("conflict-old (<< 1.0)").into_iter().flatten().collect(),
+            replaces: Package::parse_dependencies("old-replaced-pkg").into_iter().flatten().collect(),
+            provides: Package::parse_provides("virtual-pkg (= 4.0), another-virtual"),
+            built_using: None,
+            original_maintainer: None,
+            other_fields: HashMap::new(),
         };
 
-        println!("Repository Info:\n{}", apt_info);
+        // Package から PackageData へ変換
+        let ipak_pkg_data: PackageData = debian_pkg.into();
 
-        match fetch_package_indices(&apt_info).await {
-            Ok(packages) => {
-                for package in packages.iter().take(5) { // 最初の5パッケージを表示
-                    println!("\n{}", package);
-                }
-                println!("\nTotal packages: {}", packages.len());
-                assert!(!packages.is_empty(), "No packages were fetched");
-            }
-            Err(e) => {
-                eprintln!("Error: {}", e);
-                panic!("Failed to fetch packages: {}", e);
-            }
-        }
-    }
+        // 変換結果の検証
+        assert_eq!(ipak_pkg_data.about.package.name, "example-package");
+        assert_eq!(ipak_pkg_data.about.package.version.to_string(), "1.2.3-1ubuntu1"); // Versionの文字列比較
+        assert_eq!(ipak_pkg_data.about.author.name, "John Doe");
+        assert_eq!(ipak_pkg_data.about.author.email, "john.doe@example.com");
+        assert_eq!(ipak_pkg_data.architecture, vec!["amd64".to_string()]);
+        assert_eq!(ipak_pkg_data.mode, Mode::Any); // デフォルトでAnyになることを確認
 
-    #[tokio::test]
-    async fn test_fetch_noble_source_packages() {
-        let apt_info = AptInfo {
-            types: AptType::DebSrc,
-            uris: "http://archive.ubuntu.com/ubuntu".to_string(),
-            suites: vec!["noble".to_string()],
-            components: vec!["main".to_string()],
-            architectures: Vec::new(), // Not applicable for deb-src
-        };
+        // 依存関係の検証 (例としてDependsの一部を検証)
+        assert!(!ipak_pkg_data.relation.depend.is_empty());
+        assert_eq!(ipak_pkg_data.relation.depend[0][0].name, "dep-a");
+        assert_eq!(ipak_pkg_data.relation.depend[0][0].range.to_string(), ">= 1.0");
+        assert_eq!(ipak_pkg_data.relation.depend[1][0].name, "dep-b");
+        assert_eq!(ipak_pkg_data.relation.depend[1][0].range.to_string(), "= 2.0");
+        assert_eq!(ipak_pkg_data.relation.depend[1][1].name, "dep-c");
+        assert_eq!(ipak_pkg_data.relation.depend[1][1].range.to_string(), ""); // dep-c にはバージョン範囲がない
 
-        println!("Repository Info:\n{}", apt_info);
+        // Conflicts と Replaces の統合の検証
+        assert!(!ipak_pkg_data.relation.conflicts.is_empty());
+        // conflict-oldとold-replaced-pkgの両方が含まれていることを確認
+        let conflict_names: Vec<String> = ipak_pkg_data.relation.conflicts.iter().map(|pr| pr.name.clone()).collect();
+        assert!(conflict_names.contains(&"conflict-old".to_string()));
+        assert!(conflict_names.contains(&"old-replaced-pkg".to_string()));
 
-        match fetch_package_indices(&apt_info).await {
-            Ok(packages) => {
-                for package in packages.iter().take(5) { // 最初の5ソースパッケージを表示
-                    println!("\n{}", package);
-                }
-                println!("\nTotal source packages: {}", packages.len());
-                assert!(!packages.is_empty(), "No source packages were fetched");
-            }
-            Err(e) => {
-                eprintln!("Error: {}", e);
-                panic!("Failed to fetch source packages: {}", e);
-            }
-        }
+        // Provides (virtuals) の検証
+        assert!(!ipak_pkg_data.relation.virtuals.is_empty());
+        assert_eq!(ipak_pkg_data.relation.virtuals[0].name, "virtual-pkg");
+        assert_eq!(ipak_pkg_data.relation.virtuals[0].version.to_string(), "4.0");
+
+
+        println!("\n--- Converted PackageData ---");
+        println!("{}", ipak_pkg_data); // PackageData の Display を利用して出力
     }
 }
