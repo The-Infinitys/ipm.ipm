@@ -522,8 +522,8 @@ mod tests {
         assert!(!ipak_pkg_data.relation.depend.is_empty());
         assert_eq!(ipak_pkg_data.relation.depend[0][0].name, "dep-a");
         assert_eq!(ipak_pkg_data.relation.depend[0][0].range.to_string(), ">= 1.0");
-        assert_eq!(ipak_pkg_data.relation.depend[1][0].name, "dep-b");
-        assert_eq!(ipak_pkg_data.relation.depend[1][0].range.to_string(), "= 2.0");
+        assert_eq!(ipak_pkg_data.relation.depend[0][1].name, "dep-b");
+        assert_eq!(ipak_pkg_data.relation.depend[0][1].range.to_string(), "= 2.0");
         assert_eq!(ipak_pkg_data.relation.depend[1][1].name, "dep-c");
         assert_eq!(ipak_pkg_data.relation.depend[1][1].range.to_string(), ""); // dep-c にはバージョン範囲がない
 
