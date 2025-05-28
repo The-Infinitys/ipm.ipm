@@ -1,9 +1,14 @@
+use cmd_arg::cmd_arg;
 use ipak::modules::pkg::PackageData;
 use std::fmt;
 use tokio::io;
-
+mod install;
+mod purge;
+mod remove;
+mod self_host;
 mod types;
-
+mod update;
+use super::messages;
 use types::{apt, ipm};
 
 pub struct RepoIndex {
@@ -91,6 +96,22 @@ impl fmt::Display for RepoIndex {
             }
         }
     }
+}
+
+pub fn repo(args: Vec<&cmd_arg::Option>) -> Result<(), io::Error> {
+    if args.is_empty() {
+        return messages::unknown();
+    }
+    let sub_cmd = args.first().unwrap().to_owned();
+    let sub_args: Vec<&cmd_arg::Option> = args[1..].to_vec();
+    match sub_cmd.opt_str.as_str() {
+        "update" | "-U" => update::update()?,
+        "install" | "-i" => install::install(sub_args)?,
+        "remove" => remove::remove(sub_args)?,
+        "purge" => purge::purge(sub_args)?,
+        _ => messages::unknown()?,
+    }
+    Ok(())
 }
 
 #[cfg(test)]

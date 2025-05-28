@@ -1,10 +1,11 @@
 use cmd_arg::cmd_arg;
 use ipak::dprintln;
-use ipm::modules::messages as ipm_messages;
 use ipak::modules::messages as ipak_messages;
 use ipak::modules::pkg as ipak_pkg;
 use ipak::modules::project as ipak_project;
 use ipak::modules::system as ipak_system;
+use ipm::modules::messages as ipm_messages;
+use ipm::modules::repo as ipm_repo;
 fn main() -> Result<(), std::io::Error> {
     let command_data = cmd_arg::get();
     dprintln!("{}", command_data);
@@ -12,7 +13,9 @@ fn main() -> Result<(), std::io::Error> {
 
     // 引数がない場合は早期リターン
     if opts.is_empty() {
-        return Err(std::io::Error::from(std::io::ErrorKind::InvalidInput));
+        return Err(std::io::Error::from(
+            std::io::ErrorKind::InvalidInput,
+        ));
     }
 
     let command = &opts[0];
@@ -25,6 +28,7 @@ fn main() -> Result<(), std::io::Error> {
         Version,
         Project,
         Package,
+        Repository,
         Unknown,
         System,
     }
@@ -39,6 +43,7 @@ fn main() -> Result<(), std::io::Error> {
         "project" | "proj" | "--projec" => SubCommand::Project,
         "system" | "sys" | "--system" => SubCommand::System,
         "pkg" | "package" | "--package" => SubCommand::Package,
+        "repo" | "repository" | "repositories" => SubCommand::Repository,
         _ => SubCommand::Unknown,
     };
 
@@ -48,6 +53,7 @@ fn main() -> Result<(), std::io::Error> {
         SubCommand::Manual => ipm_messages::manual()?,
         SubCommand::Project => ipak_project::project(sub_opts)?,
         SubCommand::System => ipak_system::system(sub_opts)?,
+        SubCommand::Repository => ipm_repo::repo(sub_opts)?,
         SubCommand::Package => ipak_pkg::pkg(sub_opts)?,
         SubCommand::Unknown => ipak_messages::unknown()?,
     }

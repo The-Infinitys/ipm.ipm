@@ -15,3 +15,8 @@ pub fn version() -> Result<(), std::io::Error> {
     println!("{} {} ({})",env!("CARGO_PKG_NAME").bold(),env!("CARGO_PKG_VERSION"),ARCH);
     Ok(())
 }
+
+pub fn unknown()->Result<(),std::io::Error>{
+    eprintln!("unknown input: {}",cmd_arg::cmd_str());
+    Err(std::io::Error::from(std::io::ErrorKind::InvalidInput))
+}
