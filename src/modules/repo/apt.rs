@@ -193,9 +193,9 @@ impl Package {
     /// Each inner vector represents an OR group.
     fn parse_dependencies(dep_str: &str) -> Vec<Vec<PackageRange>> {
         dep_str.split(',')
-            .filter_map(|group_str| {
-                let alternatives: Vec<PackageRange> = group_str.split('|')
-                    .filter_map(|dep_part| {
+            .map(|group_str| {
+                group_str.split('|')
+                    .map(|dep_part| {
                         let trimmed_dep = dep_part.trim();
                         // Example: "pkg-name (>= 1.0)" or "pkg-name"
                         let parts: Vec<&str> = trimmed_dep.splitn(2, ' ').collect();
@@ -208,14 +208,9 @@ impl Package {
                             // No version range specified, assume any version
                             VersionRange::default() // Represents any version
                         };
-                        Some(PackageRange { name, range })
+                        PackageRange { name, range }
                     })
-                    .collect();
-                if alternatives.is_empty() {
-                    None
-                } else {
-                    Some(alternatives)
-                }
+                    .collect()
             })
             .collect()
     }
@@ -224,7 +219,7 @@ impl Package {
     /// into a vector of PackageVersion.
     fn parse_provides(provides_str: &str) -> Vec<PackageVersion> {
         provides_str.split(',')
-            .filter_map(|provide_part| {
+            .map(|provide_part| {
                 let trimmed_provide = provide_part.trim();
                 let parts: Vec<&str> = trimmed_provide.splitn(2, ' ').collect();
                 let name = parts[0].to_string();
@@ -234,7 +229,7 @@ impl Package {
                 } else {
                     Version::default() // No version specified, use default
                 };
-                Some(PackageVersion { name, version })
+                PackageVersion { name, version }
             })
             .collect()
     }
@@ -417,7 +412,6 @@ impl From<Package> for PackageData {
             architecture: pkg.architecture.map(|arch| vec![arch]).unwrap_or_default(),
             mode: ipak::modules::pkg::Mode::Any, // Debian Packagesファイルはインストールモードを直接示さないためAnyとする
             relation: relation_data,
-            ..Default::default()
         };
 
         // description、section、priority、homepage、built_using、original_maintainer
