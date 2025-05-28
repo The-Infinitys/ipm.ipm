@@ -877,12 +877,15 @@ dependencies = [
 name = "ipm"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "cmd_arg",
  "colored",
  "deb822-lossless",
  "flate2",
  "ipak",
  "reqwest",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 

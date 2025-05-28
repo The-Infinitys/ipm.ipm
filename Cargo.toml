@@ -12,3 +12,6 @@ deb822-lossless = "0.2.6"
 flate2 = "1.1.1"
 reqwest = "0.12.16"
 tokio = { version = "1.45.1", features = ["macros"] }
+serde = { version = "1.0.219", features = ["derive"] }
+chrono = { version = "0.4.41", features = ["serde"] }
+serde_json = "1.0.140"
