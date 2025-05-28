@@ -464,25 +464,7 @@ impl From<Package> for PackageData {
         // もしipak::modules::pkg::PackageDataの定義を変更できるなら、Replaces用のフィールドを追加するのが理想的です。
         relation_data.conflicts.extend(pkg.replaces);
 
-        let package_data = PackageData {
-            about: AboutData {
-                author: AuthorAboutData {
-                    name: author_name,
-                    email: author_email,
-                },
-                package: PackageAboutData {
-                    name: pkg.package,
-                    version: Version::from_str(&pkg.version)
-                        .unwrap_or_default(), // Debianのバージョン文字列をipak::Versionに変換
-                },
-            },
-            architecture: pkg
-                .architecture
-                .map(|arch| vec![arch])
-                .unwrap_or_default(),
-            mode: ipak::modules::pkg::Mode::Any, // Debian Packagesファイルはインストールモードを直接示さないためAnyとする
-            relation: relation_data,
-        };
+        
 
         // description、section、priority、homepage、built_using、original_maintainer
         // そして other_fields の残りを PackageData の other_fields に追加
@@ -511,7 +493,25 @@ impl From<Package> for PackageData {
         //     // 他のフィールドも同様
         // }
 
-        package_data
+        PackageData {
+            about: AboutData {
+                author: AuthorAboutData {
+                    name: author_name,
+                    email: author_email,
+                },
+                package: PackageAboutData {
+                    name: pkg.package,
+                    version: Version::from_str(&pkg.version)
+                        .unwrap_or_default(), // Debianのバージョン文字列をipak::Versionに変換
+                },
+            },
+            architecture: pkg
+                .architecture
+                .map(|arch| vec![arch])
+                .unwrap_or_default(),
+            mode: ipak::modules::pkg::Mode::Any, // Debian Packagesファイルはインストールモードを直接示さないためAnyとする
+            relation: relation_data,
+        }
     }
 }
 
