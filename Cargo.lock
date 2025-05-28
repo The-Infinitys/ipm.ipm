@@ -859,7 +859,7 @@ dependencies = [
 [[package]]
 name = "ipak"
 version = "0.1.0"
-source = "git+https://github.com/The-Infinitys/ipm.ipak.git#977494e0d7f6b31694ed5ba6d3691bac7176deaf"
+source = "git+https://github.com/The-Infinitys/ipm.ipak.git#24da3d00d95a809895f0255aebfed9c324429f08"
 dependencies = [
  "chrono",
  "cmd_arg",
@@ -883,9 +883,11 @@ dependencies = [
  "deb822-lossless",
  "flate2",
  "ipak",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
+ "serde_yaml",
  "tokio",
 ]
 
