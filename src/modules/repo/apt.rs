@@ -403,7 +403,7 @@ impl From<Package> for PackageData {
         relation_data.conflicts.extend(pkg.replaces);
 
 
-        let mut package_data = PackageData {
+        let package_data = PackageData {
             about: AboutData {
                 author: AuthorAboutData {
                     name: author_name,
@@ -466,7 +466,7 @@ async fn fetch_url(client: &Client, url: &str) -> Result<String, io::Error> {
         .map_err(|e| io::Error::new(io::ErrorKind::ConnectionRefused, format!("Failed to send request to {}: {}", url, e)))?;
 
     if !response.status().is_success() {
-        return Err(io::Error::new(io::ErrorKind::Other, format!("HTTP error: {} for URL: {}", response.status(), url)));
+        return Err(io::Error::other(format!("HTTP error: {} for URL: {}", response.status(), url)));
     }
     let bytes = response.bytes().await
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to read response bytes: {}", e)))?;

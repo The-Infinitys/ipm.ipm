@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 // ここでは仮に `crate::package_data::` プレフィックスを使用します。
 // 必要に応じて、`use` ステートメントを調整してください。
 use ipak::modules::pkg::PackageData; // 仮のパス
-use ipak::modules::version::{Version, VersionRange};
+use ipak::modules::version::Version;
 /// リポジトリのベースURLやアクセス情報を提供します。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoInfo {
@@ -67,9 +67,9 @@ impl RepoInfo {
         url.push_str(&format!(
             "/packages/{}/{}/{}-{}-{}.{}",
             package_name,
-            version.to_string(), // Version型にDisplayトレイトが実装されていることを想定
+            version, // Version型にDisplayトレイトが実装されていることを想定
             package_name,
-            version.to_string(),
+            version,
             architecture,
             extension
         ));
