@@ -5,7 +5,7 @@ use tokio::io;
 mod install;
 mod purge;
 mod remove;
-mod self_host;
+mod server;
 mod types;
 mod update;
 use super::messages;
@@ -109,6 +109,7 @@ pub fn repo(args: Vec<&cmd_arg::Option>) -> Result<(), io::Error> {
         "install" | "-i" => install::install(sub_args)?,
         "remove" => remove::remove(sub_args)?,
         "purge" => purge::purge(sub_args)?,
+        "serve" | "server" => server::server(sub_args)?,
         _ => messages::unknown()?,
     }
     Ok(())
