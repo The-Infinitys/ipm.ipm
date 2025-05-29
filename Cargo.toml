@@ -10,7 +10,7 @@ cmd_arg = { git = "https://github.com/The-Infinitys/rust.cmd-arg.git" }
 colored = "3.0.0"
 deb822-lossless = "0.2.6"
 flate2 = "1.1.1"
-reqwest = "0.12.16"
+reqwest = { version = "0.12.16", features = ["blocking"] }
 tokio = { version = "1.45.1", features = ["macros"] }
 serde = { version = "1.0.219", features = ["derive"] }
 chrono = { version = "0.4.41", features = ["serde"] }
