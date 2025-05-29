@@ -1,5 +1,7 @@
 use super::super::messages;
+use chrono::{DateTime, Local};
 use cmd_arg::cmd_arg;
+use ipak::modules::pkg::AuthorAboutData;
 mod init;
 pub fn server(args: Vec<&cmd_arg::Option>) -> Result<(), std::io::Error> {
     if args.is_empty() {
@@ -12,4 +14,9 @@ pub fn server(args: Vec<&cmd_arg::Option>) -> Result<(), std::io::Error> {
         _ => messages::unknown()?,
     }
     Ok(())
+}
+
+pub struct RepoData {
+    author: AuthorAboutData,
+    last_modified: DateTime<Local>,
 }
