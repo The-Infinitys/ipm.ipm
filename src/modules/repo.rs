@@ -4,6 +4,7 @@ use cmd_arg::cmd_arg;
 use colored::Colorize;
 use ipak::modules::pkg::{AuthorAboutData, PackageData};
 mod server;
+use serde::{Deserialize, Serialize};
 use std::{fmt, io};
 pub fn repo(args: Vec<&cmd_arg::Option>) -> Result<(), io::Error> {
     if args.is_empty() {
@@ -18,12 +19,14 @@ pub fn repo(args: Vec<&cmd_arg::Option>) -> Result<(), io::Error> {
     Ok(())
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct RepoData {
     author: AuthorAboutData,
     last_modified: DateTime<Local>,
     packages: Vec<PackageMetaData>,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct PackageMetaData {
     last_modified: DateTime<Local>,
     info: PackageData,

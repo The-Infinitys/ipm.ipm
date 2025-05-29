@@ -424,6 +424,7 @@ dependencies = [
  "cmd_arg",
  "colored",
  "ipak",
+ "serde",
 ]
 
 [[package]]
