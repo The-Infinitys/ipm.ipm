@@ -91,7 +91,7 @@ pub fn metadata() -> Result<RepoData, io::Error> {
                             entry.file_name().to_string_lossy()
                         );
                         let url = format!(
-                            "packages/{}-{}.ipak",
+                            "/packages/{}-{}.ipak",
                             &project_data.about.package.name,
                             &project_data.about.package.version
                         );
