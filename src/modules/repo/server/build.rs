@@ -43,7 +43,7 @@ pub fn build() -> Result<(), std::io::Error> {
             build_result?;
             package_result?;
             let package_src = path.join("ipak/package");
-            let package_dst = out_dir.join("package");
+            let package_dst = out_dir.join("packages");
             if package_src.exists() {
                 std::fs::create_dir_all(&package_dst)?;
                 for pkg_entry in std::fs::read_dir(&package_src)? {
