@@ -10,9 +10,9 @@ pub fn server(args: Vec<&cmd_arg::Option>) -> Result<(), std::io::Error> {
         return messages::unknown();
     }
     let sub_cmd = args.first().unwrap().to_owned();
-    let sub_args: Vec<&cmd_arg::Option> = args[1..].to_vec();
+    // let sub_args: Vec<&cmd_arg::Option> = args[1..].to_vec();
     match sub_cmd.opt_str.as_str() {
-        "init" => init::init(sub_args)?,
+        "init" => init::init()?,
         _ => messages::unknown()?,
     }
     Ok(())
