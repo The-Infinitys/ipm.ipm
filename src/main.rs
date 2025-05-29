@@ -1,6 +1,5 @@
 use cmd_arg::cmd_arg;
 use ipak::dprintln;
-use ipak::modules::messages as ipak_messages;
 use ipak::modules::pkg as ipak_pkg;
 use ipak::modules::project as ipak_project;
 use ipak::modules::system as ipak_system;
@@ -19,7 +18,8 @@ fn main() -> Result<(), std::io::Error> {
     }
 
     let command = &opts[0];
-    let sub_opts: Vec<&cmd_arg::Option> = opts[1..].iter().collect();
+    let sub_opts: Vec<&cmd_arg::Option> =
+        opts[1..].iter().collect();
 
     // SubCommand enumの定義はそのまま
     enum SubCommand {
@@ -38,12 +38,16 @@ fn main() -> Result<(), std::io::Error> {
     // OptionTypeに関わらず、opt_strで直接マッチング
     let sub_command: SubCommand = match opt_str {
         "--help" | "-h" | "help" => SubCommand::Help,
-        "--manual" | "-m" | "manual" | "man" => SubCommand::Manual,
+        "--manual" | "-m" | "manual" | "man" => {
+            SubCommand::Manual
+        }
         "--version" | "-v" | "version" => SubCommand::Version,
         "project" | "proj" | "--projec" => SubCommand::Project,
         "system" | "sys" | "--system" => SubCommand::System,
         "pkg" | "package" | "--package" => SubCommand::Package,
-        "repo" | "repository" | "repositories" => SubCommand::Repository,
+        "repo" | "repository" | "repositories" => {
+            SubCommand::Repository
+        }
         _ => SubCommand::Unknown,
     };
 
@@ -55,7 +59,7 @@ fn main() -> Result<(), std::io::Error> {
         SubCommand::System => ipak_system::system(sub_opts)?,
         SubCommand::Repository => ipm_repo::repo(sub_opts)?,
         SubCommand::Package => ipak_pkg::pkg(sub_opts)?,
-        SubCommand::Unknown => ipak_messages::unknown()?,
+        SubCommand::Unknown => ipm_messages::unknown()?,
     }
     Ok(())
 }

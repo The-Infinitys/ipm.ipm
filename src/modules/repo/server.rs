@@ -1,7 +1,9 @@
 use super::super::messages;
 use cmd_arg::cmd_arg;
 mod init;
-pub fn server(args: Vec<&cmd_arg::Option>) -> Result<(), std::io::Error> {
+pub fn server(
+    args: Vec<&cmd_arg::Option>,
+) -> Result<(), std::io::Error> {
     if args.is_empty() {
         return messages::unknown();
     }

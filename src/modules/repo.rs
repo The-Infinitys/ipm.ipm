@@ -8,7 +8,9 @@ use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{fmt, io};
-pub fn repo(args: Vec<&cmd_arg::Option>) -> Result<(), io::Error> {
+pub fn repo(
+    args: Vec<&cmd_arg::Option>,
+) -> Result<(), io::Error> {
     if args.is_empty() {
         return messages::unknown();
     }
@@ -42,21 +44,29 @@ impl RepoData {
                 std::io::Error::new(std::io::ErrorKind::Other, e)
             },
         )?;
-        let request = request.text().map_err(|e| -> std::io::Error {
-            std::io::Error::new(std::io::ErrorKind::Other, e)
-        })?;
-        let result: RepoData = serde_yaml::from_str(&request).map_err(
-            |e| -> std::io::Error {
-                std::io::Error::new(std::io::ErrorKind::InvalidData, e)
-            },
-        )?;
+        let request =
+            request.text().map_err(|e| -> std::io::Error {
+                std::io::Error::new(std::io::ErrorKind::Other, e)
+            })?;
+        let result: RepoData = serde_yaml::from_str(&request)
+            .map_err(|e| -> std::io::Error {
+                std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    e,
+                )
+            })?;
         Ok(result)
     }
 }
 impl fmt::Display for PackageMetaData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.info)?;
-        writeln!(f, "{}: {}", "Last Modified".bold(), self.last_modified)?;
+        writeln!(
+            f,
+            "{}: {}",
+            "Last Modified".bold(),
+            self.last_modified
+        )?;
         writeln!(f, "{}: {}", "URL".bold(), self.url)
     }
 }
@@ -64,7 +74,12 @@ impl fmt::Display for PackageMetaData {
 impl fmt::Display for RepoData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}:\n{}", "Author".bold(), self.author)?;
-        writeln!(f, "{}: {}", "Last Modified".bold(), self.last_modified)?;
+        writeln!(
+            f,
+            "{}: {}",
+            "Last Modified".bold(),
+            self.last_modified
+        )?;
         for package in &self.packages {
             writeln!(f, "{}", package)?;
         }
@@ -77,7 +92,8 @@ mod tests {
 
     #[test]
     fn test() -> Result<(), std::io::Error> {
-        let test_repodata = RepoData::new("http://localhost:3000")?;
+        let test_repodata =
+            RepoData::new("http://localhost:3000")?;
         println!("{}", test_repodata);
         Ok(())
     }

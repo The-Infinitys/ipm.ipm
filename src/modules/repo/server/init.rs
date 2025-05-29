@@ -25,25 +25,43 @@ impl Default for ServerRepoInitOptions {
 
 impl fmt::Display for ServerRepoInitOptions {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}: {}", "Author Name".bold(), self.author_name)?;
-        writeln!(f, "{}: {}", "Author Email".bold(), self.author_email)
+        writeln!(
+            f,
+            "{}: {}",
+            "Author Name".bold(),
+            self.author_name
+        )?;
+        writeln!(
+            f,
+            "{}: {}",
+            "Author Email".bold(),
+            self.author_email
+        )
     }
 }
 
-pub fn init(args: Vec<&cmd_arg::Option>) -> Result<(), std::io::Error> {
+pub fn init(
+    args: Vec<&cmd_arg::Option>,
+) -> Result<(), std::io::Error> {
     let mut opts = ServerRepoInitOptions::default();
     for arg in args {
         match arg.opt_str.as_str() {
             "--name" => {
                 if arg.opt_values.len() == 1 {
-                    opts.author_name =
-                        arg.opt_values.first().unwrap().to_owned();
+                    opts.author_name = arg
+                        .opt_values
+                        .first()
+                        .unwrap()
+                        .to_owned();
                 }
             }
             "--email" => {
                 if arg.opt_values.len() == 1 {
-                    opts.author_email =
-                        arg.opt_values.first().unwrap().to_owned();
+                    opts.author_email = arg
+                        .opt_values
+                        .first()
+                        .unwrap()
+                        .to_owned();
                 }
             }
             _ => continue,
@@ -59,7 +77,10 @@ fn server_initation(
 ) -> Result<(), std::io::Error> {
     let entries = fs::read_dir(".")?;
     if entries.count() > 0 {
-        eprintln!("{}", "Error: Current directory is not empty.".red());
+        eprintln!(
+            "{}",
+            "Error: Current directory is not empty.".red()
+        );
         return Err(std::io::Error::new(
             std::io::ErrorKind::Other,
             "Current directory is not empty",
@@ -69,16 +90,28 @@ fn server_initation(
         from: String,
         to: String,
     }
-    let setup_list = [SetUpData {
-        from: {
-            serde_yaml::to_string(&opts).map_err(|e| -> std::io::Error {
-                std::io::Error::new(std::io::ErrorKind::Other, e)
-            })
-        }?,
-        to: "ipm/repo.yaml".to_owned(),
-    }];
+    let setup_list = [
+        SetUpData {
+            from: {
+                serde_yaml::to_string(&opts).map_err(
+                    |e| -> std::io::Error {
+                        std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            e,
+                        )
+                    },
+                )
+            }?,
+            to: "ipm/repo.yaml".to_owned(),
+        },
+        SetUpData {
+            from: "".to_owned(),
+            to: "projects".to_owned(),
+        },
+        SetUpData { from: "".to_owned(), to: "out".to_owned() },
+    ];
     for setup_data in setup_list {
-        if setup_data.to.is_empty() {
+        if setup_data.from.is_empty() {
             dir_creation(&setup_data.to)?;
         } else {
             file_creation(&setup_data.to, &setup_data.from)?;
