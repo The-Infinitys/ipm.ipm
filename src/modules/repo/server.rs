@@ -1,5 +1,6 @@
 use super::super::messages;
 use cmd_arg::cmd_arg;
+mod build;
 mod init;
 mod metadata;
 mod project;
@@ -14,6 +15,7 @@ pub fn server(
     match sub_cmd.opt_str.as_str() {
         "init" | "-i" => init::init(sub_args)?,
         "project" | "proj" => project::project(sub_args)?,
+        "build" => build::build()?,
         "metadata" | "info" => metadata::show_metadata()?,
         _ => messages::unknown()?,
     }

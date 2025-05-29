@@ -1,12 +1,12 @@
 use cmd_arg::cmd_arg;
 use colored::Colorize;
-use ipak::dprintln;
+// use ipak::dprintln;
 use std::env::consts::ARCH;
 pub fn help(
     args: Vec<&cmd_arg::Option>,
 ) -> Result<(), std::io::Error> {
     for arg in args {
-        dprintln!("Arg: {}", arg);
+        println!("Arg: {}", arg);
     }
     Ok(())
 }
