@@ -1,5 +1,6 @@
 use cmd_arg::cmd_arg;
 use colored::Colorize;
+use ipak::modules::pkg::AuthorAboutData;
 use ipak::utils::files::{dir_creation, file_creation};
 use ipak::{
     dprintln,
@@ -93,7 +94,11 @@ fn server_initation(
     let setup_list = [
         SetUpData {
             from: {
-                serde_yaml::to_string(&opts).map_err(
+                let target_data = AuthorAboutData {
+                    name: opts.author_name.clone(),
+                    email: opts.author_email.clone(),
+                };
+                serde_yaml::to_string(&target_data).map_err(
                     |e| -> std::io::Error {
                         std::io::Error::new(
                             std::io::ErrorKind::Other,

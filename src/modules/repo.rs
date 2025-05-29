@@ -29,6 +29,15 @@ pub struct RepoData {
     last_modified: DateTime<Local>,
     packages: Vec<PackageMetaData>,
 }
+impl Default for RepoData {
+    fn default() -> Self {
+        Self {
+            author: AuthorAboutData::default(),
+            last_modified: Local::now(),
+            packages: vec![],
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct PackageMetaData {
