@@ -1,7 +1,7 @@
 use super::super::messages;
 use chrono::{DateTime, Local};
 use cmd_arg::cmd_arg;
-use ipak::modules::pkg::PackageData;
+use ipak::modules::pkg::{AuthorAboutData, PackageData};
 mod init;
 use std::fmt;
 
@@ -20,25 +20,31 @@ pub fn server(args: Vec<&cmd_arg::Option>) -> Result<(), std::io::Error> {
 
 pub struct RepoIndex {
     url: String,
+    pub author: AuthorAboutData,
     last_updated: Option<DateTime<Local>>,
-    packages: Vec<PackageData>,
+    packages: Vec<PackageMetadata>,
 }
 
 impl RepoIndex {
     /// `RepoIndex` の新しいインスタンスを作成するためのコンストラクタ
     pub fn new(url: String) -> Self {
-        Self { url, last_updated: None, packages: Vec::new() }
+        Self {
+            url,
+            author: AuthorAboutData::default(),
+            last_updated: None,
+            packages: Vec::new(),
+        }
     }
 
     /// パッケージデータを取得する非同期関数
     pub async fn get(
         &mut self,
-    ) -> Result<&Vec<PackageData>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<PackageData>, Box<dyn std::error::Error>> {
         if self.packages.is_empty() {
             // パッケージリストの取得
             self.update().await?;
         }
-        Ok(&self.packages)
+        Ok(self.packages.iter().map(|pkg| pkg.info.to_owned()).collect())
     }
 
     /// リポジトリの情報を更新する
