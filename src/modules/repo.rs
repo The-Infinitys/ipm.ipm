@@ -4,7 +4,9 @@ use cmd_arg::cmd_arg;
 use colored::Colorize;
 use ipak::modules::pkg::{AuthorAboutData, PackageData};
 mod server;
+use reqwest;
 use serde::{Deserialize, Serialize};
+use serde_yaml;
 use std::{fmt, io};
 pub fn repo(args: Vec<&cmd_arg::Option>) -> Result<(), io::Error> {
     if args.is_empty() {
@@ -32,6 +34,25 @@ pub struct PackageMetaData {
     info: PackageData,
     url: String,
 }
+impl RepoData {
+    pub fn new(url: &str) -> Result<Self, std::io::Error> {
+        let url = format!("{}/repo.yaml", url);
+        let request = reqwest::blocking::get(url).map_err(
+            |e| -> std::io::Error {
+                std::io::Error::new(std::io::ErrorKind::Other, e)
+            },
+        )?;
+        let request = request.text().map_err(|e| -> std::io::Error {
+            std::io::Error::new(std::io::ErrorKind::Other, e)
+        })?;
+        let result: RepoData = serde_yaml::from_str(&request).map_err(
+            |e| -> std::io::Error {
+                std::io::Error::new(std::io::ErrorKind::InvalidData, e)
+            },
+        )?;
+        Ok(result)
+    }
+}
 impl fmt::Display for PackageMetaData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.info)?;
@@ -47,6 +68,17 @@ impl fmt::Display for RepoData {
         for package in &self.packages {
             writeln!(f, "{}", package)?;
         }
+        Ok(())
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::RepoData;
+
+    #[test]
+    fn test() -> Result<(), std::io::Error> {
+        let test_repodata = RepoData::new("http://localhost:3000")?;
+        println!("{}", test_repodata);
         Ok(())
     }
 }
