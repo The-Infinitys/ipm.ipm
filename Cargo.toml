@@ -8,3 +8,4 @@ build = "build.rs"
 ipak = { git = "https://github.com/The-Infinitys/ipm.ipak.git" }
 cmd_arg = { git = "https://github.com/The-Infinitys/rust.cmd-arg.git" }
 colored = "3.0.0"
+chrono = { version = "0.4.41", features = ["serde"] }
