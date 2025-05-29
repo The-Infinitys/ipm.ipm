@@ -108,7 +108,7 @@ pub fn metadata() -> Result<RepoData, io::Error> {
                         e
                     ),
                 }
-                println!(
+                dprintln!(
                     "{}",
                     entry.file_name().to_string_lossy()
                 );
