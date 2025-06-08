@@ -1,88 +1,87 @@
+use reqwest;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::fmt;
 use std::path::PathBuf;
-use std::str::{Bytes, FromStr};
+use std::str::FromStr;
 
+/// Represents a parsed URL.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct URL {
     protocol: String,
-    domain: Vec<String>,
+    domain: String, // Changed to String for simpler domain representation
     path: PathBuf,
 }
 
 impl URL {
-    /// 新しいURLインスタンスを作成します
+    /// Creates a new URL instance.
     pub fn new(
         protocol: impl Into<String>,
-        domain: Vec<String>,
+        domain: impl Into<String>,
         path: PathBuf,
     ) -> Self {
-        URL { protocol: protocol.into(), domain, path }
+        URL {
+            protocol: protocol.into(),
+            domain: domain.into(),
+            path,
+        }
     }
-    pub fn fetch(&self) -> Result<Bytes, i32> {
-        Ok(())
+
+    /// Fetches data from the URL.
+    /// Returns the response body as a String or a boxed error.
+    pub fn fetch(
+        &self,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        let request_url = self.to_string();
+        let response = reqwest::blocking::get(&request_url)?; // Use ? for error propagation
+
+        response.text().map_err(|e| e.into()) // Convert reqwest::Error to Box<dyn std::error::Error>
     }
-    pub fn fetch_str(&self) -> Result<String, i32> {
-        match self.fetch() {
-                Ok(byte_data) => Ok(byte_data.to_string()),
-                Err(e) => Err(e),
-            
-        })
-    }
-    /// URL文字列からURLインスタンスを作成します
-    pub fn parse(url: &str) -> Result<Self, &'static str> {
-        let parts: Vec<&str> = url.split("://").collect();
+
+    /// Parses a URL string into a URL instance.
+    pub fn parse(url_str: &str) -> Result<Self, &'static str> {
+        let parts: Vec<&str> = url_str.split("://").collect();
         if parts.len() != 2 {
-            return Err("Invalid URL format");
+            return Err(
+                "Invalid URL format: missing protocol or malformed",
+            );
         }
 
         let protocol = parts[0].to_string();
         let rest = parts[1];
 
-        let domain_path: Vec<&str> = rest.split('/').collect();
-        let domain = domain_path[0]
-            .split('.')
-            .map(|s| s.to_string())
-            .collect();
+        let mut domain_path_parts = rest.splitn(2, '/'); // Split only on the first '/'
+        let domain = domain_path_parts
+            .next()
+            .ok_or("Invalid URL format: missing domain")?
+            .to_string();
 
-        let path = if domain_path.len() > 1 {
-            PathBuf::from(domain_path[1..].join("/"))
-        } else {
-            PathBuf::new()
-        };
+        let path =
+            if let Some(path_str) = domain_path_parts.next() {
+                PathBuf::from(path_str)
+            } else {
+                PathBuf::new()
+            };
 
         Ok(URL { protocol, domain, path })
     }
 
-    /// URLの文字列表現を取得します
-    pub fn to_string(&self) -> String {
-        format!(
-            "{}://{}/{}",
-            self.protocol,
-            self.domain.join("."),
-            self.path.display()
-        )
-    }
-
-    /// URLからデータを取得するメソッド群
+    /// Returns the protocol of the URL.
     pub fn protocol(&self) -> &str {
         &self.protocol
     }
 
-    pub fn domain(&self) -> &[String] {
+    /// Returns the domain of the URL.
+    pub fn domain(&self) -> &str {
         &self.domain
     }
 
+    /// Returns the path of the URL.
     pub fn path(&self) -> &PathBuf {
         &self.path
     }
-
-    pub fn domain_string(&self) -> String {
-        self.domain.join(".")
-    }
 }
 
+// Implements `FromStr` trait for easy conversion from string slices to `URL`.
 impl FromStr for URL {
     type Err = &'static str;
 
@@ -91,32 +90,37 @@ impl FromStr for URL {
     }
 }
 
+// Implements `Display` trait for easily formatting `URL` instances into strings.
 impl fmt::Display for URL {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}://{}/{}",
-            self.protocol,
-            self.domain.join("."),
-            self.path.display()
-        )
+        if self.path.as_os_str().is_empty() {
+            write!(f, "{}://{}", self.protocol, self.domain)
+        } else {
+            write!(
+                f,
+                "{}://{}/{}",
+                self.protocol,
+                self.domain,
+                self.path.display()
+            )
+        }
     }
 }
 
-// StrToURLトレイトの定義
-pub trait StrToURL {
+/// Trait for converting types to a `URL` instance.
+pub trait ToURL {
     fn to_url(&self) -> Result<URL, &'static str>;
 }
 
-// String用の実装
-impl StrToURL for String {
+// Implement `ToURL` for `String`.
+impl ToURL for String {
     fn to_url(&self) -> Result<URL, &'static str> {
         URL::parse(self)
     }
 }
 
-// &str用の実装
-impl StrToURL for &str {
+// Implement `ToURL` for `&str`.
+impl ToURL for &str {
     fn to_url(&self) -> Result<URL, &'static str> {
         URL::parse(self)
     }
@@ -125,6 +129,7 @@ impl StrToURL for &str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn test_url_parse() {
@@ -133,34 +138,44 @@ mod tests {
         )
         .unwrap();
         assert_eq!(url.protocol, "https");
-        assert_eq!(url.domain, vec!["www", "example", "com"]);
+        assert_eq!(url.domain, "www.example.com");
         assert_eq!(url.path, PathBuf::from("path/to/resource"));
+
+        let url_no_path =
+            URL::parse("http://example.org").unwrap();
+        assert_eq!(url_no_path.protocol, "http");
+        assert_eq!(url_no_path.domain, "example.org");
+        assert_eq!(url_no_path.path, PathBuf::new());
     }
 
     #[test]
     fn test_url_to_string() {
         let url = URL::new(
             "https",
-            vec![
-                "www".to_string(),
-                "example".to_string(),
-                "com".to_string(),
-            ],
+            "www.example.com",
             PathBuf::from("path/to/resource"),
         );
         assert_eq!(
             url.to_string(),
             "https://www.example.com/path/to/resource"
         );
+
+        let url_no_path =
+            URL::new("http", "example.org", PathBuf::new());
+        assert_eq!(
+            url_no_path.to_string(),
+            "http://example.org"
+        );
     }
 
     #[test]
     fn test_from_str() {
-        let url = "https://www.example.com/path/to/resource"
-            .parse::<URL>()
-            .unwrap();
+        let url: URL =
+            "https://www.example.com/path/to/resource"
+                .parse()
+                .unwrap();
         assert_eq!(url.protocol, "https");
-        assert_eq!(url.domain, vec!["www", "example", "com"]);
+        assert_eq!(url.domain, "www.example.com");
         assert_eq!(url.path, PathBuf::from("path/to/resource"));
     }
 
@@ -168,11 +183,7 @@ mod tests {
     fn test_display() {
         let url = URL::new(
             "https",
-            vec![
-                "www".to_string(),
-                "example".to_string(),
-                "com".to_string(),
-            ],
+            "www.example.com",
             PathBuf::from("path/to/resource"),
         );
         assert_eq!(
@@ -182,29 +193,35 @@ mod tests {
     }
 
     #[test]
-    fn test_str_to_url() {
+    fn test_to_url_trait() {
         let url_str = "https://www.example.com/path";
         let url = url_str.to_url().unwrap();
         assert_eq!(url.protocol(), "https");
-        assert_eq!(url.domain_string(), "www.example.com");
+        assert_eq!(url.domain(), "www.example.com");
+
+        let url_string =
+            String::from("http://localhost:8080/api");
+        let url_from_string = url_string.to_url().unwrap();
+        assert_eq!(url_from_string.protocol(), "http");
+        assert_eq!(url_from_string.domain(), "localhost:8080");
+        assert_eq!(
+            url_from_string.path(),
+            &PathBuf::from("api")
+        );
     }
 
     #[test]
     fn test_serde() {
         let url = URL::new(
             "https",
-            vec![
-                "www".to_string(),
-                "example".to_string(),
-                "com".to_string(),
-            ],
+            "www.example.com",
             PathBuf::from("path"),
         );
 
-        // シリアライズ
+        // Serialize
         let serialized = serde_json::to_string(&url).unwrap();
 
-        // デシリアライズ
+        // Deserialize
         let deserialized: URL =
             serde_json::from_str(&serialized).unwrap();
 
@@ -215,16 +232,12 @@ mod tests {
     fn test_getters() {
         let url = URL::new(
             "https",
-            vec![
-                "www".to_string(),
-                "example".to_string(),
-                "com".to_string(),
-            ],
+            "www.example.com",
             PathBuf::from("path"),
         );
 
         assert_eq!(url.protocol(), "https");
-        assert_eq!(url.domain_string(), "www.example.com");
+        assert_eq!(url.domain(), "www.example.com");
         assert_eq!(url.path(), &PathBuf::from("path"));
     }
 }
