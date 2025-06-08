@@ -50,12 +50,12 @@ impl RepoData {
         let url = format!("{}/repo.yaml", url);
         let request = reqwest::blocking::get(url).map_err(
             |e| -> std::io::Error {
-                std::io::Error::new(std::io::ErrorKind::Other, e)
+                std::io::Error::other(e)
             },
         )?;
         let request =
             request.text().map_err(|e| -> std::io::Error {
-                std::io::Error::new(std::io::ErrorKind::Other, e)
+                std::io::Error::other(e)
             })?;
         let result: RepoData = serde_yaml::from_str(&request)
             .map_err(|e| -> std::io::Error {

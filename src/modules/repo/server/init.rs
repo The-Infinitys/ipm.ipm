@@ -82,8 +82,7 @@ fn server_initation(
             "{}",
             "Error: Current directory is not empty.".red()
         );
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
+        return Err(std::io::Error::other(
             "Current directory is not empty",
         ));
     }
@@ -100,8 +99,7 @@ fn server_initation(
                 };
                 serde_yaml::to_string(&target_data).map_err(
                     |e| -> std::io::Error {
-                        std::io::Error::new(
-                            std::io::ErrorKind::Other,
+                        std::io::Error::other(
                             e,
                         )
                     },

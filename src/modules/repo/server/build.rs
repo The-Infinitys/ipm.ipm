@@ -60,7 +60,7 @@ pub fn build() -> Result<(), std::io::Error> {
     }
     let repo_metadata = serde_yaml::to_string(&repo_metadata)
         .map_err(|e| -> std::io::Error {
-            std::io::Error::new(std::io::ErrorKind::Other, e)
+            std::io::Error::other(e)
         })?;
     file_creation("out/repo.yaml", &repo_metadata)?;
     Ok(())
