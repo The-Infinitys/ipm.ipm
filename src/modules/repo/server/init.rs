@@ -1,5 +1,5 @@
 use cmd_arg::cmd_arg;
-use colored::Colorize;
+use ipak::utils::color::colorize::*;
 use ipak::modules::pkg::AuthorAboutData;
 use ipak::utils::files::{dir_creation, file_creation};
 use ipak::{

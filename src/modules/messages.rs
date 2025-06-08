@@ -1,5 +1,5 @@
 use cmd_arg::cmd_arg;
-use colored::Colorize;
+use ipak::utils::color::colorize::*;
 // use ipak::dprintln;
 use std::env::consts::ARCH;
 pub fn help(

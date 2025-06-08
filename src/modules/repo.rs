@@ -1,7 +1,7 @@
 use super::messages;
 use chrono::{DateTime, Local};
 use cmd_arg::cmd_arg;
-use colored::Colorize;
+use ipak::utils::color::colorize::*;
 use ipak::modules::pkg::{AuthorAboutData, PackageData};
 mod server;
 use reqwest;
