@@ -12,3 +12,4 @@ chrono = { version = "0.4.41", features = ["serde"] }
 serde = "1.0.219"
 reqwest = { version = "0.12.18", features = ["blocking"] }
 serde_yaml = "0.9.34"
+serde_json = "1.0.140"
