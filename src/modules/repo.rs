@@ -102,7 +102,7 @@ mod tests {
     #[test]
     fn test() -> Result<(), std::io::Error> {
         let test_repodata =
-            RepoData::new("http://localhost:3000")?;
+            RepoData::new("http://develop.the-infinitys.f5.si/ipm.official-repo/")?;
         println!("{}", test_repodata);
         Ok(())
     }
