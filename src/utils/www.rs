@@ -68,7 +68,7 @@ impl URL {
                 PathBuf::new()
             };
 
-        Ok(URL { protocol, domain, path })
+        Ok(Self::new(protocol, domain, path))
     }
 
     /// Returns the protocol of the URL.
@@ -104,7 +104,7 @@ impl fmt::Display for URL {
         } else {
             write!(
                 f,
-                "{}://{}/{}",
+                "{}://{}{}",
                 self.protocol,
                 self.domain,
                 self.path.display()
@@ -145,13 +145,13 @@ mod tests {
         .unwrap();
         assert_eq!(url.protocol, "https");
         assert_eq!(url.domain, "www.example.com");
-        assert_eq!(url.path, PathBuf::from("path/to/resource"));
+        assert_eq!(url.path, PathBuf::from("/path/to/resource"));
 
         let url_no_path =
             URL::parse("http://example.org").unwrap();
         assert_eq!(url_no_path.protocol, "http");
         assert_eq!(url_no_path.domain, "example.org");
-        assert_eq!(url_no_path.path, PathBuf::new());
+        assert_eq!(url_no_path.path, PathBuf::from("/"));
     }
 
     #[test]
@@ -170,7 +170,7 @@ mod tests {
             URL::new("http", "example.org", PathBuf::new());
         assert_eq!(
             url_no_path.to_string(),
-            "http://example.org"
+            "http://example.org/"
         );
     }
 
@@ -182,7 +182,7 @@ mod tests {
                 .unwrap();
         assert_eq!(url.protocol, "https");
         assert_eq!(url.domain, "www.example.com");
-        assert_eq!(url.path, PathBuf::from("path/to/resource"));
+        assert_eq!(url.path, PathBuf::from("/path/to/resource"));
     }
 
     #[test]
@@ -212,7 +212,7 @@ mod tests {
         assert_eq!(url_from_string.domain(), "localhost:8080");
         assert_eq!(
             url_from_string.path(),
-            &PathBuf::from("api")
+            &PathBuf::from("/api")
         );
     }
 
@@ -244,6 +244,6 @@ mod tests {
 
         assert_eq!(url.protocol(), "https");
         assert_eq!(url.domain(), "www.example.com");
-        assert_eq!(url.path(), &PathBuf::from("path"));
+        assert_eq!(url.path(), &PathBuf::from("/path"));
     }
 }
