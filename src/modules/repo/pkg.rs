@@ -63,7 +63,7 @@ fn search_pkgs(
                     return true;
                 }
             }
-            return false;
+            false
         })
         .collect();
     Ok(packages)
@@ -83,7 +83,7 @@ fn fetch_pkg(
         let target_url = package
             .url
             .to_url()
-            .map_err(|e| std::io::Error::other(e))?;
+            .map_err(std::io::Error::other)?;
         let filename = match target_url.path().file_name() {
             Some(path_os_str) => {
                 path_os_str.to_string_lossy().to_string()
