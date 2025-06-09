@@ -279,10 +279,8 @@ fn parse_package_versions(
 /// 指定されたURLからPackages.gzファイルをダウンロードし、解析してRepoDataを返します。
 pub fn fetch(url: URL) -> Result<RepoData, std::io::Error> {
     // URLに"Packages.gz"を結合
-    let packages_url = url
-        .clone()
-        .join("Packages.gz")
-        .map_err(|e| {
+    let packages_url =
+        url.clone().join("Packages.gz").map_err(|e| {
             std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 e,
@@ -290,15 +288,16 @@ pub fn fetch(url: URL) -> Result<RepoData, std::io::Error> {
         })?;
 
     // HTTPリクエストでPackages.gzをダウンロード
-    let response_text = packages_url.fetch().map_err(|e| {
-        std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Failed to fetch Packages.gz: {}", e),
-        )
-    })?;
+    let response_text =
+        packages_url.fetch_bin().map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to fetch Packages.gz: {}", e),
+            )
+        })?;
 
     // Gzipを解凍
-    let compressed_data = response_text.as_bytes();
+    let compressed_data = &response_text[..];
     let decoder = GzDecoder::new(compressed_data);
     let reader = BufReader::new(decoder);
 

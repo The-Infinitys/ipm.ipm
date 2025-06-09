@@ -32,8 +32,17 @@ impl URL {
         Ok(Self::new(
             self.protocol,
             self.domain,
-            self.path.join(path).canonicalize()?,
+            self.path.join(path),
         ))
+    }
+    /// Fetches binary data from the URL.
+    /// Returns the response body as a Vec<u8> or a boxed error.
+    pub fn fetch_bin(
+        &self,
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let request_url = self.to_string();
+        let response = reqwest::blocking::get(&request_url)?;
+        response.bytes().map(|b| b.to_vec()).map_err(|e| e.into())
     }
     /// Fetches data from the URL.
     /// Returns the response body as a String or a boxed error.
