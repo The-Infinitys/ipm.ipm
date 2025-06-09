@@ -32,10 +32,7 @@ fn search_pkgs(
             .iter()
             .find(|p| p.info.about.package.name == name)
         {
-            println!(
-                "Found package: {}",
-                &pkg.info.about.package.name
-            );
+            println!("{}", pkg.info);
             // ここでパッケージの取得処理を追加できます
         }
     }
