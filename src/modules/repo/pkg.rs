@@ -1,7 +1,10 @@
+use std::env;
+
 use super::list;
 use crate::modules::repo::PackageMetaData;
 use crate::utils::www::*;
 use cmd_arg::cmd_arg;
+use ipak::utils::color::colorize::Colorize;
 pub fn pkg(
     args: Vec<&cmd_arg::Option>,
 ) -> Result<(), std::io::Error> {
@@ -35,7 +38,14 @@ pub fn pkg(
 fn show_searched_pkgs(
     packages_name: Vec<String>,
 ) -> Result<(), std::io::Error> {
-    let packages = search_pkgs(packages_name)?;
+    let packages = search_pkgs(packages_name.clone())?;
+    if packages.is_empty() {
+        eprintln!(
+            "{}: {}",
+            "パッケージが見つかりませんでした。".red(),
+            packages_name.join(", ")
+        )
+    }
     for package in packages {
         println!("{}", package);
     }
@@ -61,7 +71,14 @@ fn search_pkgs(
 fn fetch_pkg(
     packages_name: Vec<String>,
 ) -> Result<(), std::io::Error> {
-    let packages = search_pkgs(packages_name)?;
+    let packages = search_pkgs(packages_name.clone())?;
+    if packages.is_empty() {
+        eprintln!(
+            "{}: {}",
+            "パッケージが見つかりませんでした。".red(),
+            packages_name.join(", ")
+        )
+    }
     for package in packages {
         let target_url = package
             .url
@@ -79,10 +96,11 @@ fn fetch_pkg(
                 )
             }
         };
+        let target_path = env::current_dir()?.join(filename);
         let data = target_url
             .fetch_bin()
             .map_err(|e| std::io::Error::other(e.to_string()))?;
-        std::fs::write(&filename, &data)?;
+        std::fs::write(target_path, &data)?;
     }
     Ok(())
 }
