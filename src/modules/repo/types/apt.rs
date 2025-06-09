@@ -130,7 +130,7 @@ pub fn parse_control_file(
             },
         },
         architecture,
-        mode: Mode::Any, // APTパッケージは通常、特定のモードを持たないためAny
+        mode: Mode::Global, // APTパッケージは通常、システム単位でパッケージをインストールするため、Global
         relation: relation_data,
     })
 }
