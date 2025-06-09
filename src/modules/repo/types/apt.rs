@@ -168,7 +168,7 @@ fn parse_package_ranges(
         let alternatives: Result<Vec<PackageRange>> = group_str
             .split('|')
             .map(|alt_str| {
-                let parts: Vec<&str> = alt_str.trim().split_whitespace().collect();
+                let parts: Vec<&str> = alt_str.split_whitespace().collect();
                 if parts.is_empty() {
                     return Err(anyhow!("Empty package range alternative"));
                 }
@@ -204,7 +204,7 @@ fn parse_single_package_ranges(
     input
         .split(',')
         .map(|s| {
-            let parts: Vec<&str> = s.trim().split_whitespace().collect();
+            let parts: Vec<&str> = s.split_whitespace().collect();
             if parts.is_empty() {
                 return Err(anyhow!("Empty package range"));
             }
@@ -237,7 +237,7 @@ fn parse_package_versions(
     input
         .split(',')
         .map(|s| {
-            let parts: Vec<&str> = s.trim().split_whitespace().collect();
+            let parts: Vec<&str> = s.split_whitespace().collect();
             if parts.is_empty() {
                 return Err(anyhow!("Empty package version"));
             }
@@ -268,9 +268,8 @@ fn parse_package_versions(
 fn get_filename(control_content: &str) -> String {
     let mut filename = String::new();
     for line in control_content.lines() {
-        if line.starts_with("Filename:") {
-            filename =
-                line["Filename:".len()..].trim().to_string();
+        if let Some(stripped) = line.strip_prefix("Filename:") {
+            filename = stripped.trim().to_string();
             break;
         }
     }

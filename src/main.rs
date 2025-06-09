@@ -1,9 +1,9 @@
 use cmd_arg::cmd_arg;
 use ipak::dprintln;
-use ipak::modules::pkg as ipak_pkg;
 use ipak::modules::project as ipak_project;
 use ipak::modules::system as ipak_system;
 use ipm::modules::messages as ipm_messages;
+use ipm::modules::pkg as ipm_pkg;
 use ipm::modules::repo as ipm_repo;
 fn main() -> Result<(), std::io::Error> {
     let command_data = cmd_arg::get();
@@ -58,7 +58,7 @@ fn main() -> Result<(), std::io::Error> {
         SubCommand::Project => ipak_project::project(sub_opts)?,
         SubCommand::System => ipak_system::system(sub_opts)?,
         SubCommand::Repository => ipm_repo::repo(sub_opts)?,
-        SubCommand::Package => ipak_pkg::pkg(sub_opts)?,
+        SubCommand::Package => ipm_pkg::pkg(sub_opts)?,
         SubCommand::Unknown => ipm_messages::unknown()?,
     }
     Ok(())

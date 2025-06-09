@@ -4,6 +4,8 @@ use chrono::{DateTime, Local};
 use cmd_arg::cmd_arg;
 use ipak::modules::pkg::{AuthorAboutData, PackageData};
 use ipak::utils::color::colorize::*;
+mod list;
+mod pkg;
 mod server;
 mod types;
 use serde::{Deserialize, Serialize};
@@ -20,6 +22,8 @@ pub fn repo(
     let sub_args: Vec<&cmd_arg::Option> = args[1..].to_vec();
     match sub_cmd.opt_str.as_str() {
         "serve" | "server" => server::server(sub_args)?,
+        "pkg" | "package" => pkg::pkg(sub_args)?,
+        "list" => list::list()?,
         _ => messages::unknown()?,
     }
     Ok(())
@@ -117,11 +121,18 @@ mod tests {
     fn test_fetch_ipm_repo() -> Result<(), std::io::Error> {
         println!("Testing IPM Repository Fetch...");
         let test_url = "https://develop.the-infinitys.f5.si/ipm.official-repo/".to_url().unwrap();
-        let test_repodata = RepoData::new(RepoType::Ipm, test_url.clone())?;
-        println!("Successfully fetched IPM repo from: {}", test_url);
+        let test_repodata =
+            RepoData::new(RepoType::Ipm, test_url.clone())?;
+        println!(
+            "Successfully fetched IPM repo from: {}",
+            test_url
+        );
         println!("{}", test_repodata);
         // 基本的なアサーション
-        assert!(!test_repodata.packages.is_empty(), "IPM repo should contain packages.");
+        assert!(
+            !test_repodata.packages.is_empty(),
+            "IPM repo should contain packages."
+        );
         Ok(())
     }
 
@@ -131,14 +142,31 @@ mod tests {
         println!("\nTesting APT Repository Fetch...");
         // Debianの安定版リポジトリのURLを使用
         let test_url = "https://archive.ubuntu.com/ubuntu/dists/plucky/main/binary-amd64/".to_url().unwrap();
-        let test_repodata = RepoData::new(RepoType::Apt, test_url.clone())?;
-        println!("Successfully fetched APT repo from: {}", test_url);
+        let test_repodata =
+            RepoData::new(RepoType::Apt, test_url.clone())?;
+        println!(
+            "Successfully fetched APT repo from: {}",
+            test_url
+        );
         println!("{}", test_repodata);
 
         // 基本的なアサーション
-        assert!(!test_repodata.packages.is_empty(), "APT repo should contain packages.");
-        assert!(test_repodata.author.name != AuthorAboutData::default().name, "APT repo author should be set.");
-        assert!(test_repodata.last_modified != Local::now() && (Local::now() - test_repodata.last_modified).num_days() < 365, "APT repo last modified date should be recent.");
+        assert!(
+            !test_repodata.packages.is_empty(),
+            "APT repo should contain packages."
+        );
+        assert!(
+            test_repodata.author.name
+                != AuthorAboutData::default().name,
+            "APT repo author should be set."
+        );
+        assert!(
+            test_repodata.last_modified != Local::now()
+                && (Local::now() - test_repodata.last_modified)
+                    .num_days()
+                    < 365,
+            "APT repo last modified date should be recent."
+        );
 
         // assert!(apt_package_found, "The 'apt' package should be found in the Debian repository.");
 

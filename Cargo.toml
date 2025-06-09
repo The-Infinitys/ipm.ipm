@@ -14,3 +14,5 @@ serde_yaml = "0.9.34"
 serde_json = "1.0.140"
 flate2 = "1.1.2"
 anyhow = "1.0.98"
+tokio = { version = "1.45.1", features = ["full"] }
+futures = "0.3.31"
