@@ -22,10 +22,16 @@ impl URL {
         URL {
             protocol: protocol.into(),
             domain: domain.into(),
-            path,
+            path: PathBuf::from("/").join(path),
         }
     }
-
+    pub fn join(
+        &mut self,
+        path: &str,
+    ) -> Result<(), std::io::Error> {
+        self.path = self.path.join(path).canonicalize()?;
+        Ok(())
+    }
     /// Fetches data from the URL.
     /// Returns the response body as a String or a boxed error.
     pub fn fetch(

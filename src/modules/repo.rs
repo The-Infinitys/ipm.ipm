@@ -2,13 +2,11 @@ use super::messages;
 use crate::utils::www::*;
 use chrono::{DateTime, Local};
 use cmd_arg::cmd_arg;
-use ipak::dprintln;
 use ipak::modules::pkg::{AuthorAboutData, PackageData};
 use ipak::utils::color::colorize::*;
 mod server;
-use reqwest;
+mod types;
 use serde::{Deserialize, Serialize};
-use serde_yaml;
 use std::str::FromStr;
 use std::{fmt, io};
 pub fn repo(
@@ -76,23 +74,13 @@ impl RepoData {
         repo_type: RepoType,
         url: URL,
     ) -> Result<Self, std::io::Error> {
-        dprintln!("{}", repo_type);
-        let url = format!("{}/repo.yaml", url);
-        let request = reqwest::blocking::get(url).map_err(
-            |e| -> std::io::Error { std::io::Error::other(e) },
-        )?;
-        let request =
-            request.text().map_err(|e| -> std::io::Error {
-                std::io::Error::other(e)
-            })?;
-        let result: RepoData = serde_yaml::from_str(&request)
-            .map_err(|e| -> std::io::Error {
-                std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    e,
-                )
-            })?;
-        Ok(result)
+        match repo_type {
+            RepoType::Ipm => types::ipm::fetch(url),
+            // RepoType::Apt => types::apt::fetch(url),
+            _ => Err(std::io::Error::from(
+                std::io::ErrorKind::InvalidData,
+            )),
+        }
     }
 }
 impl fmt::Display for PackageMetaData {
