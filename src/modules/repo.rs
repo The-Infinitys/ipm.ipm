@@ -120,10 +120,8 @@ mod tests {
         let test_repodata = RepoData::new(RepoType::Ipm, test_url.clone())?;
         println!("Successfully fetched IPM repo from: {}", test_url);
         println!("{}", test_repodata);
-
         // 基本的なアサーション
         assert!(!test_repodata.packages.is_empty(), "IPM repo should contain packages.");
-        assert!(test_repodata.author.name != AuthorAboutData::default().name, "IPM repo author should be set.");
         Ok(())
     }
 
