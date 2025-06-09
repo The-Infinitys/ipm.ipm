@@ -1,16 +1,17 @@
 // src/modules/repo/list.rs
-use crate::modules::{repo::RepoType, system::path};
-use crate::modules::repo::{RepoData};
 use crate::modules::repo::PackageMetaData;
-use ipak::utils::color::colorize::*;
+use crate::modules::repo::RepoData;
+use crate::modules::{repo::RepoType, system::path};
 use crate::utils::www::*;
+use futures::future::join_all;
+use ipak::utils::color::colorize::*;
 use std::fmt;
 use std::str::FromStr;
-use futures::future::join_all;
 use tokio::runtime::Runtime; // tokio::runtime::Runtimeをインポート
 
 // packages関数は同期関数として定義
-pub fn packages() -> Result<Vec<PackageMetaData>, std::io::Error> {
+pub fn packages() -> Result<Vec<PackageMetaData>, std::io::Error>
+{
     let rt = Runtime::new()?; // 新しいTokioランタイムを作成
 
     // block_onを使って、非同期処理を同期的に実行
@@ -23,12 +24,7 @@ pub fn packages() -> Result<Vec<PackageMetaData>, std::io::Error> {
         for repo_index in repos {
             let repo_type = repo_index.repo_type;
             // URL文字列をURL型に変換。失敗した場合はエラーを返す。
-            let url = repo_index.url.to_url().map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
-            
-            // 各リポジトリのフェッチを非同期タスクとしてスポーン
-            // `tokio::spawn`は新しいタスクをバックグラウンドで実行し、JoinHandleを返す
-            fetch_futures.push(tokio::spawn(async move {
-                // RepoData::new は非同期関数なのでawait
+            let url = repo_index.url.to_url().map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;fetch_futures.push(tokio::spawn(async move {
                 RepoData::new(repo_type, url)
                     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to fetch repo data: {}", e)))
             }));
@@ -62,8 +58,10 @@ pub fn packages() -> Result<Vec<PackageMetaData>, std::io::Error> {
 fn get_indexes() -> Result<Vec<RepoIndex>, std::io::Error> {
     let local_repos = path::local::repo_list_path();
     let global_repos = path::local::repo_list_path(); // Note: This currently points to the same path as local_repos.
-    let local_content = std::fs::read_to_string(&local_repos).unwrap_or("".to_string());
-    let global_content = std::fs::read_to_string(&global_repos).unwrap_or("".to_string()); // Reads from the same path if local_repos and global_repos are identical
+    let local_content = std::fs::read_to_string(&local_repos)
+        .unwrap_or("".to_string());
+    let global_content = std::fs::read_to_string(&global_repos)
+        .unwrap_or("".to_string()); // Reads from the same path if local_repos and global_repos are identical
     let mut repos = parse_repo(local_content)?;
     repos.extend(parse_repo(global_content)?);
     Ok(repos)
@@ -107,7 +105,10 @@ fn parse_repo(
                 url: url.trim().to_string(),
             });
         } else {
-            eprintln!("Warning: Malformed repository entry skipped: '{}'. Expected 'type:url' format.", line);
+            eprintln!(
+                "Warning: Malformed repository entry skipped: '{}'. Expected 'type:url' format.",
+                line
+            );
         }
     }
     Ok(result)
