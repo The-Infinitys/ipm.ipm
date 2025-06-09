@@ -1,6 +1,6 @@
 use cmd_arg::cmd_arg;
-use ipak::utils::color::colorize::*;
 use ipak::modules::pkg::AuthorAboutData;
+use ipak::utils::color::colorize::*;
 use ipak::utils::files::{dir_creation, file_creation};
 use ipak::{
     dprintln,
@@ -99,9 +99,7 @@ fn server_initation(
                 };
                 serde_yaml::to_string(&target_data).map_err(
                     |e| -> std::io::Error {
-                        std::io::Error::other(
-                            e,
-                        )
+                        std::io::Error::other(e)
                     },
                 )
             }?,

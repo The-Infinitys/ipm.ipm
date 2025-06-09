@@ -46,12 +46,15 @@ pub fn build() -> Result<(), std::io::Error> {
             let package_dst = out_dir.join("packages");
             if package_src.exists() {
                 std::fs::create_dir_all(&package_dst)?;
-                for pkg_entry in std::fs::read_dir(&package_src)? {
+                for pkg_entry in std::fs::read_dir(&package_src)?
+                {
                     let pkg_entry = pkg_entry?;
                     let pkg_path = pkg_entry.path();
                     if pkg_path.is_file() {
-                        let file_name = pkg_path.file_name().unwrap();
-                        let dst_path = package_dst.join(file_name);
+                        let file_name =
+                            pkg_path.file_name().unwrap();
+                        let dst_path =
+                            package_dst.join(file_name);
                         std::fs::copy(&pkg_path, &dst_path)?;
                     }
                 }

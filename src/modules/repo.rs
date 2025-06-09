@@ -31,13 +31,13 @@ pub enum RepoType {
     Ipm,
     Apt,
 }
-impl FromStr for RepoType{
+impl FromStr for RepoType {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_ascii_lowercase().as_str(){
-            "apt"=>Ok(Self::Apt),
-            "ipm"=>Ok(Self::Ipm),
-            _=> Err(format!("Invalid RepoType: {}",s))
+        match s.to_ascii_lowercase().as_str() {
+            "apt" => Ok(Self::Apt),
+            "ipm" => Ok(Self::Ipm),
+            _ => Err(format!("Invalid RepoType: {}", s)),
         }
     }
 }
