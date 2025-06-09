@@ -320,8 +320,19 @@ pub fn fetch(url: URL) -> Result<RepoData, std::io::Error> {
                                     get_filename(
                                         &current_control,
                                     );
+                                // urlのpathの最初のディレクトリを取得
+                                let parent_path = url
+                                    .path()
+                                    .to_str()
+                                    .unwrap()
+                                    .to_owned();
+                                let parent_path = parent_path
+                                    .trim_start_matches('/')
+                                    .split('/')
+                                    .next()
+                                    .unwrap_or("");
                                 let package_url = url.clone()
-                                    .join(&package_url_str)
+                                    .join(format!("/{}/{}",parent_path,package_url_str).as_str())
                                     .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
                                 packages.push(PackageMetaData {
                                     last_modified: Local::now(), // 実際の値は取得できないためデフォルト
@@ -346,39 +357,6 @@ pub fn fetch(url: URL) -> Result<RepoData, std::io::Error> {
             // 行をcurrent_controlに追加
             current_control.push_str(&line);
             current_control.push('\n');
-        }
-    }
-
-    // 最後のcontrolブロックを解析（ファイル末尾に空行がない場合）
-    if !current_control.is_empty() {
-        match parse_control_file(&current_control) {
-            Ok(parsed_data_map) => {
-                match to_package_data(parsed_data_map) {
-                    Ok(package_data) => {
-                        let package_url_str =
-                            get_filename(&current_control);
-                        println!("{}", package_url_str);
-                        let package_url = url.clone()
-                            .join(format!("/{}",package_url_str).as_str())
-                            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-                        packages.push(PackageMetaData {
-                            last_modified: Local::now(),
-                            info: package_data,
-                            url: package_url.to_string(),
-                        });
-                    }
-                    Err(e) => eprintln!(
-                        "Failed to convert HashMap to PackageData: {}",
-                        e
-                    ),
-                }
-            }
-            Err(e) => {
-                eprintln!(
-                    "Failed to parse control block into HashMap: {}",
-                    e
-                )
-            }
         }
     }
 
