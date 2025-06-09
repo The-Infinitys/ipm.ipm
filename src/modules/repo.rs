@@ -1,12 +1,15 @@
 use super::messages;
+use crate::utils::www::*;
 use chrono::{DateTime, Local};
 use cmd_arg::cmd_arg;
-use ipak::utils::color::colorize::*;
+use ipak::dprintln;
 use ipak::modules::pkg::{AuthorAboutData, PackageData};
+use ipak::utils::color::colorize::*;
 mod server;
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
+use std::str::FromStr;
 use std::{fmt, io};
 pub fn repo(
     args: Vec<&cmd_arg::Option>,
@@ -22,7 +25,30 @@ pub fn repo(
     }
     Ok(())
 }
-
+#[derive(Serialize, Deserialize, Default, Clone, Copy)]
+pub enum RepoType {
+    #[default]
+    Ipm,
+    Apt,
+}
+impl FromStr for RepoType{
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str(){
+            "apt"=>Ok(Self::Apt),
+            "ipm"=>Ok(Self::Ipm),
+            _=> Err(format!("Invalid RepoType: {}",s))
+        }
+    }
+}
+impl fmt::Display for RepoType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Ipm => write!(f, "ipm"),
+            Self::Apt => write!(f, "apt"),
+        }
+    }
+}
 #[derive(Serialize, Deserialize)]
 pub struct RepoData {
     author: AuthorAboutData,
@@ -46,12 +72,14 @@ pub struct PackageMetaData {
     url: String,
 }
 impl RepoData {
-    pub fn new(url: &str) -> Result<Self, std::io::Error> {
+    pub fn new(
+        repo_type: RepoType,
+        url: URL,
+    ) -> Result<Self, std::io::Error> {
+        dprintln!("{}", repo_type);
         let url = format!("{}/repo.yaml", url);
         let request = reqwest::blocking::get(url).map_err(
-            |e| -> std::io::Error {
-                std::io::Error::other(e)
-            },
+            |e| -> std::io::Error { std::io::Error::other(e) },
         )?;
         let request =
             request.text().map_err(|e| -> std::io::Error {
@@ -97,12 +125,13 @@ impl fmt::Display for RepoData {
 }
 #[cfg(test)]
 mod tests {
-    use super::RepoData;
-
+    use super::*;
     #[test]
     fn test() -> Result<(), std::io::Error> {
-        let test_repodata =
-            RepoData::new("http://develop.the-infinitys.f5.si/ipm.official-repo/")?;
+        let test_repodata = RepoData::new(
+            RepoType::Ipm,
+            "http://develop.the-infinitys.f5.si/ipm.official-repo/".to_url().unwrap(),
+        )?;
         println!("{}", test_repodata);
         Ok(())
     }

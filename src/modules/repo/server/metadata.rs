@@ -96,7 +96,7 @@ pub fn metadata() -> Result<RepoData, io::Error> {
                             &project_data.about.package.version
                         );
                         projects.push(PackageMetaData {
-                            url,
+                            url: url,
                             last_modified,
                             info: project_data,
                         });
