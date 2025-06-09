@@ -9,6 +9,7 @@ mod types;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::{fmt, io};
+
 pub fn repo(
     args: Vec<&cmd_arg::Option>,
 ) -> Result<(), io::Error> {
@@ -49,9 +50,9 @@ impl fmt::Display for RepoType {
 }
 #[derive(Serialize, Deserialize)]
 pub struct RepoData {
-    author: AuthorAboutData,
-    last_modified: DateTime<Local>,
-    packages: Vec<PackageMetaData>,
+    pub author: AuthorAboutData, // pub に変更してテストでアクセス可能に
+    pub last_modified: DateTime<Local>, // pub に変更してテストでアクセス可能に
+    pub packages: Vec<PackageMetaData>, // pub に変更してテストでアクセス可能に
 }
 impl Default for RepoData {
     fn default() -> Self {
@@ -65,9 +66,9 @@ impl Default for RepoData {
 
 #[derive(Serialize, Deserialize)]
 pub struct PackageMetaData {
-    last_modified: DateTime<Local>,
-    info: PackageData,
-    url: String,
+    pub last_modified: DateTime<Local>, // pub に変更してテストでアクセス可能に
+    pub info: PackageData, // pub に変更してテストでアクセス可能に
+    pub url: String, // pub に変更してテストでアクセス可能に
 }
 impl RepoData {
     pub fn new(
@@ -76,10 +77,7 @@ impl RepoData {
     ) -> Result<Self, std::io::Error> {
         match repo_type {
             RepoType::Ipm => types::ipm::fetch(url),
-            // RepoType::Apt => types::apt::fetch(url),
-            _ => Err(std::io::Error::from(
-                std::io::ErrorKind::InvalidData,
-            )),
+            RepoType::Apt => types::apt::fetch(url),
         }
     }
 }
@@ -114,13 +112,38 @@ impl fmt::Display for RepoData {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
-    fn test() -> Result<(), std::io::Error> {
-        let test_repodata = RepoData::new(
-            RepoType::Ipm,
-            "http://develop.the-infinitys.f5.si/ipm.official-repo/".to_url().unwrap(),
-        )?;
+    fn test_fetch_ipm_repo() -> Result<(), std::io::Error> {
+        println!("Testing IPM Repository Fetch...");
+        let test_url = "https://develop.the-infinitys.f5.si/ipm.official-repo/".to_url().unwrap();
+        let test_repodata = RepoData::new(RepoType::Ipm, test_url.clone())?;
+        println!("Successfully fetched IPM repo from: {}", test_url);
         println!("{}", test_repodata);
+
+        // 基本的なアサーション
+        assert!(!test_repodata.packages.is_empty(), "IPM repo should contain packages.");
+        assert!(test_repodata.author.name != AuthorAboutData::default().name, "IPM repo author should be set.");
+        Ok(())
+    }
+
+    #[test]
+    // #[ignore = "External network dependency, might be slow or unstable"]
+    fn test_fetch_apt_repo() -> Result<(), std::io::Error> {
+        println!("\nTesting APT Repository Fetch...");
+        // Debianの安定版リポジトリのURLを使用
+        let test_url = "http://ftp.debian.org/debian/dists/testing/main/binary-amd64/".to_url().unwrap();
+        let test_repodata = RepoData::new(RepoType::Apt, test_url.clone())?;
+        println!("Successfully fetched APT repo from: {}", test_url);
+        println!("{}", test_repodata);
+
+        // 基本的なアサーション
+        assert!(!test_repodata.packages.is_empty(), "APT repo should contain packages.");
+        assert!(test_repodata.author.name != AuthorAboutData::default().name, "APT repo author should be set.");
+        assert!(test_repodata.last_modified != Local::now() && (Local::now() - test_repodata.last_modified).num_days() < 365, "APT repo last modified date should be recent.");
+
+        // assert!(apt_package_found, "The 'apt' package should be found in the Debian repository.");
+
         Ok(())
     }
 }
