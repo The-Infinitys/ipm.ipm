@@ -57,7 +57,7 @@ pub fn packages() -> Result<Vec<PackageMetaData>, std::io::Error>
 
 fn get_indexes() -> Result<Vec<RepoIndex>, std::io::Error> {
     let local_repos = path::local::repo_list_path();
-    let global_repos = path::local::repo_list_path(); // Note: This currently points to the same path as local_repos.
+    let global_repos = path::global::repo_list_path(); // Note: This currently points to the same path as local_repos.
     let local_content = std::fs::read_to_string(&local_repos)
         .unwrap_or("".to_string());
     let global_content = std::fs::read_to_string(&global_repos)
@@ -68,6 +68,7 @@ fn get_indexes() -> Result<Vec<RepoIndex>, std::io::Error> {
 }
 pub fn list() -> Result<(), std::io::Error> {
     let repos = get_indexes()?;
+    println!("{}:{}\n","Total Repos".bold(), repos.len());
     for repo in repos {
         println!("{}", repo);
     }
@@ -81,7 +82,7 @@ impl fmt::Display for RepoIndex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}:{}",
+            "{}: {}",
             self.repo_type.to_string().bold(),
             self.url.cyan()
         )
