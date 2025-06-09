@@ -26,11 +26,14 @@ impl URL {
         }
     }
     pub fn join(
-        &mut self,
+        self,
         path: &str,
-    ) -> Result<(), std::io::Error> {
-        self.path = self.path.join(path).canonicalize()?;
-        Ok(())
+    ) -> Result<Self, std::io::Error> {
+        Ok(Self::new(
+            self.protocol,
+            self.domain,
+            self.path.join(path).canonicalize()?,
+        ))
     }
     /// Fetches data from the URL.
     /// Returns the response body as a String or a boxed error.
