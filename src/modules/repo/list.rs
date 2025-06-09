@@ -3,56 +3,37 @@ use crate::modules::repo::PackageMetaData;
 use crate::modules::repo::RepoData;
 use crate::modules::{repo::RepoType, system::path};
 use crate::utils::www::*;
-use futures::future::join_all;
 use ipak::utils::color::colorize::*;
 use std::fmt;
 use std::str::FromStr;
-use tokio::runtime::Runtime; // tokio::runtime::Runtimeをインポート
 
-// packages関数は同期関数として定義
 pub fn packages() -> Result<Vec<PackageMetaData>, std::io::Error>
 {
-    let rt = Runtime::new()?; // 新しいTokioランタイムを作成
+    // 同期的にリポジトリインデックスを取得
+    let repos = get_indexes()?;
+    let mut all_packages = Vec::new();
 
-    // block_onを使って、非同期処理を同期的に実行
-    rt.block_on(async {
-        let repos = get_indexes()?; // 同期的にリポジトリインデックスを取得
+    // 各リポジトリを同期的に処理
+    for repo_index in repos {
+        let url = repo_index.url.to_url().map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                e,
+            )
+        })?;
 
-        let mut all_packages: Vec<PackageMetaData> = Vec::new();
-        let mut fetch_futures = Vec::new();
-
-        for repo_index in repos {
-            let repo_type = repo_index.repo_type;
-            // URL文字列をURL型に変換。失敗した場合はエラーを返す。
-            let url = repo_index.url.to_url().map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;fetch_futures.push(tokio::spawn(async move {
-                RepoData::new(repo_type, url)
-                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to fetch repo data: {}", e)))
-            }));
-        }
-
-        // 全てのフェッチタスクが完了するのを待つ
-        let results = join_all(fetch_futures).await; // 全てのスポーンされたタスクの完了を待つ
-
-        for result in results {
-            match result {
-                Ok(Ok(repo_data)) => {
-                    // 成功した場合、そのリポジトリのパッケージをall_packagesに追加
-                    for package_meta_data in repo_data.packages {
-                        all_packages.push(package_meta_data);
-                    }
-                },
-                Ok(Err(e)) => {
-                    eprintln!("Error fetching repository: {}", e);
-                },
-                Err(e) => {
-                    // tokio::spawnで発生したパニックなど、タスク自体が失敗した場合
-                    eprintln!("Task for fetching repository failed: {}", e);
-                }
+        // 同期的にリポジトリデータを取得
+        match RepoData::new(repo_index.repo_type, url) {
+            Ok(repo_data) => {
+                all_packages.extend(repo_data.packages);
+            }
+            Err(e) => {
+                eprintln!("Error fetching repository: {}", e);
             }
         }
+    }
 
-        Ok(all_packages)
-    })
+    Ok(all_packages)
 }
 
 fn get_indexes() -> Result<Vec<RepoIndex>, std::io::Error> {
@@ -68,7 +49,7 @@ fn get_indexes() -> Result<Vec<RepoIndex>, std::io::Error> {
 }
 pub fn list() -> Result<(), std::io::Error> {
     let repos = get_indexes()?;
-    println!("{}:{}\n","Total Repos".bold(), repos.len());
+    println!("{}:{}\n", "Total Repos".bold(), repos.len());
     for repo in repos {
         println!("{}", repo);
     }
