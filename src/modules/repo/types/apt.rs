@@ -13,10 +13,10 @@ use ipak::modules::{
 use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, str::FromStr};
 
-/// APTパッケージのcontrolファイルを解析し、PackageData構造体に変換します。
+/// APTパッケージのcontrolファイルを解析し、HashMapに変換します。
 pub fn parse_control_file(
     control_content: &str,
-) -> Result<PackageData> {
+) -> Result<HashMap<String, String>> {
     let mut data: HashMap<String, String> = HashMap::new();
     let mut current_key = String::new();
     let mut current_value = String::new();
@@ -53,6 +53,13 @@ pub fn parse_control_file(
         data.insert(current_key, current_value);
     }
 
+    Ok(data)
+}
+
+/// 解析されたHashMapからPackageData構造体を生成します。
+pub fn to_package_data(
+    data: HashMap<String, String>,
+) -> Result<PackageData> {
     let package_name = data
         .get("Package")
         .ok_or_else(|| {
@@ -256,25 +263,19 @@ fn parse_package_versions(
         .collect()
 }
 
-/// 指定されたパスのcontrolファイルを読み込み、PackageDataとして返します。
-// pub fn get_package_data_from_control_file(
-//     path: &Path,
-// ) -> Result<PackageData> {
-//     let mut file = fs::File::open(path)?;
-//     let mut contents = String::new();
-//     file.read_to_string(&mut contents)?;
-//     parse_control_file(&contents)
-// }
-
-/// テスト用のダミーのlist関数
-// pub fn list(
-//     _args: Vec<&cmd_arg::cmd_arg::Option>,
-// ) -> Result<(), io::Error> {
-//     println!(
-//         "APT list command not yet implemented. This is a placeholder."
-//     );
-//     Ok(())
-// }
+/// Helper function to extract filename from control content.
+/// This is a simplified version and might need refinement based on actual control file content.
+fn get_filename(control_content: &str) -> String {
+    let mut filename = String::new();
+    for line in control_content.lines() {
+        if line.starts_with("Filename:") {
+            filename =
+                line["Filename:".len()..].trim().to_string();
+            break;
+        }
+    }
+    filename
+}
 
 /// 指定されたURLからPackages.gzファイルをダウンロードし、解析してRepoDataを返します。
 pub fn fetch(url: URL) -> Result<RepoData, std::io::Error> {
@@ -312,18 +313,30 @@ pub fn fetch(url: URL) -> Result<RepoData, std::io::Error> {
             // 空行の場合、現在のcontrolデータを解析
             if !current_control.is_empty() {
                 match parse_control_file(&current_control) {
-                    Ok(package_data) => {
-                        let package_url = url.clone()
-                            .join(&format!("pool/main/{}/{}", package_data.about.package.name.chars().next().unwrap_or('a'), package_data.about.package.name))
-                            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-                        packages.push(PackageMetaData {
-                            last_modified: Local::now(), // 実際の値は取得できないためデフォルト
-                            info: package_data,
-                            url: package_url.to_string(),
-                        });
+                    Ok(parsed_data_map) => {
+                        match to_package_data(parsed_data_map) {
+                            Ok(package_data) => {
+                                let package_url_str =
+                                    get_filename(
+                                        &current_control,
+                                    );
+                                let package_url = url.clone()
+                                    .join(&package_url_str)
+                                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+                                packages.push(PackageMetaData {
+                                    last_modified: Local::now(), // 実際の値は取得できないためデフォルト
+                                    info: package_data,
+                                    url: package_url.to_string(),
+                                });
+                            }
+                            Err(e) => eprintln!(
+                                "Failed to convert HashMap to PackageData: {}",
+                                e
+                            ),
+                        }
                     }
                     Err(e) => eprintln!(
-                        "Failed to parse control block: {}",
+                        "Failed to parse control block into HashMap: {}",
                         e
                     ),
                 }
@@ -339,33 +352,32 @@ pub fn fetch(url: URL) -> Result<RepoData, std::io::Error> {
     // 最後のcontrolブロックを解析（ファイル末尾に空行がない場合）
     if !current_control.is_empty() {
         match parse_control_file(&current_control) {
-            Ok(package_data) => {
-                let package_url = url
-                    .join(&format!(
-                        "pool/main/{}/{}",
-                        package_data
-                            .about
-                            .package
-                            .name
-                            .chars()
-                            .next()
-                            .unwrap_or('a'),
-                        package_data.about.package.name
-                    ))
-                    .map_err(|e| {
-                        std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            e,
-                        )
-                    })?;
-                packages.push(PackageMetaData {
-                    last_modified: Local::now(),
-                    info: package_data,
-                    url: package_url.to_string(),
-                });
+            Ok(parsed_data_map) => {
+                match to_package_data(parsed_data_map) {
+                    Ok(package_data) => {
+                        let package_url_str =
+                            get_filename(&current_control);
+                        println!("{}", package_url_str);
+                        let package_url = url.clone()
+                            .join(format!("/{}",package_url_str).as_str())
+                            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+                        packages.push(PackageMetaData {
+                            last_modified: Local::now(),
+                            info: package_data,
+                            url: package_url.to_string(),
+                        });
+                    }
+                    Err(e) => eprintln!(
+                        "Failed to convert HashMap to PackageData: {}",
+                        e
+                    ),
+                }
             }
             Err(e) => {
-                eprintln!("Failed to parse control block: {}", e)
+                eprintln!(
+                    "Failed to parse control block into HashMap: {}",
+                    e
+                )
             }
         }
     }

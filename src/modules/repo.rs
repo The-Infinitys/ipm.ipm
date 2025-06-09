@@ -130,7 +130,7 @@ mod tests {
     fn test_fetch_apt_repo() -> Result<(), std::io::Error> {
         println!("\nTesting APT Repository Fetch...");
         // Debianの安定版リポジトリのURLを使用
-        let test_url = "http://ftp.debian.org/debian/dists/testing/main/binary-amd64/".to_url().unwrap();
+        let test_url = "https://archive.ubuntu.com/ubuntu/dists/plucky/main/binary-amd64/".to_url().unwrap();
         let test_repodata = RepoData::new(RepoType::Apt, test_url.clone())?;
         println!("Successfully fetched APT repo from: {}", test_url);
         println!("{}", test_repodata);
