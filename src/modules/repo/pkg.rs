@@ -1,3 +1,4 @@
+use super::list;
 use cmd_arg::cmd_arg;
 pub fn pkg(
     args: Vec<&cmd_arg::Option>,
@@ -10,20 +11,33 @@ pub fn pkg(
     let sub_cmd = args.first().unwrap().opt_str.to_string();
     let sub_args = args[1..].to_vec();
     match sub_cmd.as_str() {
-        "fetch" => {
+        "search" => {
             let pacakges = sub_args
                 .iter()
                 .map(|arg| -> String { arg.opt_str.to_string() })
                 .collect();
-            fetch_pkgs(pacakges)
+            search_pkgs(pacakges)
         }
         _ => Err(std::io::Error::from(
             std::io::ErrorKind::NotFound,
         )),
     }
 }
-fn fetch_pkgs(
-    packages: Vec<String>,
+fn search_pkgs(
+    packages_name: Vec<String>,
 ) -> Result<(), std::io::Error> {
+    let packages = list::packages()?;
+    for name in packages_name {
+        if let Some(pkg) = packages
+            .iter()
+            .find(|p| p.info.about.package.name == name)
+        {
+            println!(
+                "Found package: {}",
+                &pkg.info.about.package.name
+            );
+            // ここでパッケージの取得処理を追加できます
+        }
+    }
     Ok(())
 }
