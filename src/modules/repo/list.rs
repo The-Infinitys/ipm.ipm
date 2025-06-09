@@ -7,7 +7,7 @@ pub fn packages() -> Result<Vec<PackageData>, std::io::Error> {
 
     Ok(Vec::new())
 }
-fn get() -> Result<Vec<RepoIndex>, std::io::Error> {
+fn get_indexes() -> Result<Vec<RepoIndex>, std::io::Error> {
     let local_repos = path::local::repo_list_path();
     let global_repos = path::local::repo_list_path();
     let local_content = std::fs::read_to_string(&local_repos)?;
@@ -17,7 +17,7 @@ fn get() -> Result<Vec<RepoIndex>, std::io::Error> {
     Ok(repos)
 }
 pub fn list() -> Result<(), std::io::Error> {
-    let repos = get()?;
+    let repos = get_indexes()?;
     for repo in repos {
         println!("{}", repo);
     }
