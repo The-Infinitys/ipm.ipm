@@ -10,9 +10,9 @@ pub fn project(
         ));
     }
     let sub_cmd = args.first().unwrap().opt_str.to_string();
-    let sub_args = args[1..].to_vec();
+    // let sub_args = args[1..].to_vec();
     match sub_cmd.as_str() {
-        "convert" => convert::convert(sub_args),
+        "convert" => convert::convert(),
         _ => ipak_project::project(args),
     }
 }
