@@ -5,6 +5,7 @@ use ipm::modules::messages as ipm_messages;
 use ipm::modules::pkg as ipm_pkg;
 use ipm::modules::project as ipm_project;
 use ipm::modules::repo as ipm_repo;
+use ipm::modules::utils as ipm_utils_cmd;
 fn main() -> Result<(), std::io::Error> {
     let command_data = cmd_arg::get();
     dprintln!("{}", command_data);
@@ -31,6 +32,7 @@ fn main() -> Result<(), std::io::Error> {
         Repository,
         Unknown,
         System,
+        Utilities,
     }
 
     let opt_str = command.opt_str.as_str();
@@ -45,6 +47,7 @@ fn main() -> Result<(), std::io::Error> {
         "project" | "proj" | "--projec" => SubCommand::Project,
         "system" | "sys" | "--system" => SubCommand::System,
         "pkg" | "package" | "--package" => SubCommand::Package,
+        "utils" | "utilities" => SubCommand::Utilities,
         "repo" | "repository" | "repositories" => {
             SubCommand::Repository
         }
@@ -59,6 +62,7 @@ fn main() -> Result<(), std::io::Error> {
         SubCommand::System => ipak_system::system(sub_opts)?,
         SubCommand::Repository => ipm_repo::repo(sub_opts)?,
         SubCommand::Package => ipm_pkg::pkg(sub_opts)?,
+        SubCommand::Utilities => ipm_utils_cmd::utils(sub_opts)?,
         SubCommand::Unknown => ipm_messages::unknown()?,
     }
     Ok(())
