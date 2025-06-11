@@ -932,7 +932,7 @@ dependencies = [
 [[package]]
 name = "ipak"
 version = "0.1.0"
-source = "git+https://github.com/The-Infinitys/ipm.ipak.git#932f6338c214246fc5c6dd5562f8117056a7eaaa"
+source = "git+https://github.com/The-Infinitys/ipm.ipak.git#0ad1c6b105ddbc27819f74228897edadb12c14ce"
 dependencies = [
  "chrono",
  "cmd_arg",
