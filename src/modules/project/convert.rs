@@ -68,9 +68,9 @@ fn load_debinfo() -> Result<PackageData, std::io::Error> {
     let control_file = current_dir.join("control/control");
     let control_file = fs::read_to_string(&control_file)?;
     let control_data = apt::parse_control_file(&control_file)
-        .map_err(|e| std::io::Error::other(e))?;
+        .map_err(std::io::Error::other)?;
     apt::to_package_data(control_data).map_err(|e| {
-        std::io::Error::new(std::io::ErrorKind::Other, e)
+        std::io::Error::other(e)
     })
 }
 
