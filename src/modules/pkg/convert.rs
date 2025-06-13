@@ -11,12 +11,12 @@ pub fn convert(
     for arg in args {
         match arg.opt_str.as_str() {
             "--from" => {
-                if let Some(val) = arg.opt_values.get(0) {
+                if let Some(val) = arg.opt_values.first() {
                     path_from = val.clone();
                 }
             }
             "--to" => {
-                if let Some(val) = arg.opt_values.get(0) {
+                if let Some(val) = arg.opt_values.first() {
                     path_to = val.clone();
                 }
             }

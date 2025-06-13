@@ -9,11 +9,12 @@ pub fn utils(
             std::io::ErrorKind::InvalidInput,
         ));
     }
-    let sub_cmd =
-        args.first().unwrap().to_owned().opt_str.clone();
+    // let sub_cmd =
+        // args.first().unwrap().to_owned().opt_str.clone();
     // let sub_args: Vec<&cmd_arg::Option> = args[1..].to_vec();
-    match sub_cmd.as_str() {
-        _ => ipak_utils::utils(args)?,
-    }
+    // match sub_cmd.as_str() {
+        // _ => ipak_utils::utils(args)?,
+    // }
+    ipak_utils::utils(args)?;
     Ok(())
 }

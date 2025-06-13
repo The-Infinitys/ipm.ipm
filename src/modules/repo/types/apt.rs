@@ -290,8 +290,7 @@ pub fn fetch(url: URL) -> Result<RepoData, std::io::Error> {
     // HTTPリクエストでPackages.gzをダウンロード
     let response_text =
         packages_url.fetch_bin().map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
+            std::io::Error::other(
                 format!("Failed to fetch Packages.gz: {}", e),
             )
         })?;
