@@ -96,6 +96,15 @@ fn debian() -> Result<(), std::io::Error> {
         } else if file_name.starts_with("control.tar.") {
             extract_archive(entry.path(), control_dir.clone())?;
             fs::remove_file(entry.path())?;
+        } else if file_name == "debian-binary" {
+            let debian_bin_version =
+                fs::read_to_string(entry.path())?;
+            let debian_bin_version = debian_bin_version.trim();
+            if debian_bin_version != "2.0" {
+                return Err(std::io::Error::from(
+                    std::io::ErrorKind::Unsupported,
+                ));
+            }
         }
     }
     // この時点で、dataディレクトリと、コントロールディレクトリのみとなっている。

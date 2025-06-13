@@ -41,11 +41,29 @@ fn setup_files(
 pub fn set(pkg_type: PkgType) -> Result<(), std::io::Error> {
     let setup_list = match pkg_type {
         PkgType::Debian => {
-            vec![SetUpItem {
-                path: "".to_string(),
-                content: include_str!("templates/README.md")
+            vec![
+                SetUpItem {
+                    path: "ipak/scripts/purge.sh".to_string(),
+                    content: include_str!(
+                        "templates/deb/scripts/install.sh"
+                    )
                     .to_string(),
-            }]
+                },
+                SetUpItem {
+                    path: "ipak/scripts/purge.sh".to_string(),
+                    content: include_str!(
+                        "templates/deb/scripts/install.sh"
+                    )
+                    .to_string(),
+                },
+                SetUpItem {
+                    path: "ipak/scripts/purge.sh".to_string(),
+                    content: include_str!(
+                        "templates/deb/scripts/purge.sh"
+                    )
+                    .to_string(),
+                },
+            ]
         }
         PkgType::Unknown => {
             return Err(std::io::Error::new(
