@@ -67,8 +67,10 @@ fn debian() -> Result<(), std::io::Error> {
 
         if file_name.starts_with("data.tar.") {
             extract_archive(entry.path(), data_dir.clone())?;
+            fs::remove_file(entry.path())?;
         } else if file_name.starts_with("control.tar.") {
             extract_archive(entry.path(), control_dir.clone())?;
+            fs::remove_file(entry.path())?;
         }
     }
 
