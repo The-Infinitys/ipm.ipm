@@ -1,9 +1,11 @@
 use ipak::dprintln;
 use ipak::modules::pkg::PackageData;
 use ipak::utils::archive::extract_archive;
+use serde_yaml;
 use std::fmt::{self, Display};
 use std::fs;
 use std::path::Path;
+mod templates;
 fn is_debian<P: AsRef<Path>>(dir: P) -> bool {
     let dir = dir.as_ref();
     let debian_binary = dir.join("debian-binary");
@@ -100,5 +102,16 @@ fn debian() -> Result<(), std::io::Error> {
     // コントロールディレクトリにあるはずのcontrolファイルから、PackageDataを取得する
     let package_data = load_debinfo()?;
     dprintln!("{}", package_data);
+    fs::create_dir_all("ipak/scripts")?;
+    fs::write(
+        "ipak/project.yaml",
+        serde_yaml::to_string(&package_data).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                e,
+            )
+        })?,
+    )?;
+    templates::set(PkgType::Debian)?;
     Ok(())
 }
