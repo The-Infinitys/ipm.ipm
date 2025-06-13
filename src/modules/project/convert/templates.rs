@@ -43,16 +43,16 @@ pub fn set(pkg_type: PkgType) -> Result<(), std::io::Error> {
         PkgType::Debian => {
             vec![
                 SetUpItem {
-                    path: "ipak/scripts/purge.sh".to_string(),
+                    path: "ipak/scripts/install.sh".to_string(),
                     content: include_str!(
                         "templates/deb/scripts/install.sh"
                     )
                     .to_string(),
                 },
                 SetUpItem {
-                    path: "ipak/scripts/purge.sh".to_string(),
+                    path: "ipak/scripts/remove.sh".to_string(),
                     content: include_str!(
-                        "templates/deb/scripts/install.sh"
+                        "templates/deb/scripts/remove.sh"
                     )
                     .to_string(),
                 },
