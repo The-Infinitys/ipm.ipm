@@ -14,5 +14,5 @@ fn ipm_dir() -> PathBuf {
     home_dir().join(".ipm")
 }
 pub fn cache_dir() -> PathBuf {
-    ipm_dir().join("cache")
+    home_dir().join(".cache/ipm")
 }
