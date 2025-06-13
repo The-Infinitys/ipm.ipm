@@ -53,10 +53,7 @@ pub fn convert(
     if !extracted_path.is_dir() {
         fs::create_dir_all(&extracted_path)?;
     }
-    archive::extract_archive(
-        dest_path.clone(),
-        extracted_path.clone(),
-    )?;
+    archive::extract_archive(&dest_path, &extracted_path)?;
     let original_current = env::current_dir()?;
     env::set_current_dir(&extracted_path)?;
     let convert_result: Result<(), std::io::Error> = {
@@ -74,8 +71,9 @@ pub fn convert(
                     if ext == "ipak" {
                         let file_name =
                             path.file_name().unwrap();
-                        let target_path =
-                            original_current.join(&path_to).join(file_name);
+                        let target_path = original_current
+                            .join(&path_to)
+                            .join(file_name);
                         fs::rename(&path, &target_path)?;
                     }
                 }

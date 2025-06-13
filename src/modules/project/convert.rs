@@ -91,10 +91,13 @@ fn debian() -> Result<(), std::io::Error> {
         let file_name = file_name.to_string_lossy();
 
         if file_name.starts_with("data.tar.") {
-            extract_archive(entry.path(), data_dir.clone())?;
+            extract_archive(&entry.path(), &data_dir.clone())?;
             fs::remove_file(entry.path())?;
         } else if file_name.starts_with("control.tar.") {
-            extract_archive(entry.path(), control_dir.clone())?;
+            extract_archive(
+                &entry.path(),
+                &control_dir.clone(),
+            )?;
             fs::remove_file(entry.path())?;
         } else if file_name == "debian-binary" {
             let debian_bin_version =
