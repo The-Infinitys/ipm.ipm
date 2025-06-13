@@ -7,7 +7,7 @@ use ipak::utils::color::colorize::*;
 mod list;
 mod pkg;
 mod server;
-mod types;
+pub mod types;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::{fmt, io};

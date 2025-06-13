@@ -1,7 +1,9 @@
+use ipak::dprintln;
+use ipak::modules::pkg::PackageData;
 use ipak::utils::archive::extract_archive;
+use std::fmt::{self, Display};
 use std::fs;
 use std::path::Path;
-
 fn is_debian<P: AsRef<Path>>(dir: P) -> bool {
     let dir = dir.as_ref();
     let debian_binary = dir.join("debian-binary");
@@ -32,6 +34,15 @@ pub enum PkgType {
     Unknown,
 }
 
+impl Display for PkgType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Debian => write!(f, "DebainPackage"),
+            Self::Unknown => write!(f, "Unknown"),
+        }
+    }
+}
+
 pub fn get_pkgtype<P: AsRef<Path>>(dir: P) -> PkgType {
     if is_debian(&dir) {
         PkgType::Debian
@@ -47,6 +58,18 @@ pub fn convert() -> Result<(), std::io::Error> {
             std::io::ErrorKind::NotFound,
         )),
     }
+}
+
+fn load_debinfo() -> Result<PackageData, std::io::Error> {
+    use crate::modules::repo::types::apt;
+    let current_dir = std::env::current_dir()?;
+    let control_file = current_dir.join("control/control");
+    let control_file = fs::read_to_string(&control_file)?;
+    let control_data = apt::parse_control_file(&control_file)
+        .map_err(|e| std::io::Error::other(e))?;
+    apt::to_package_data(control_data).map_err(|e| {
+        std::io::Error::new(std::io::ErrorKind::Other, e)
+    })
 }
 
 fn debian() -> Result<(), std::io::Error> {
@@ -73,6 +96,9 @@ fn debian() -> Result<(), std::io::Error> {
             fs::remove_file(entry.path())?;
         }
     }
-
+    // この時点で、dataディレクトリと、コントロールディレクトリのみとなっている。
+    // コントロールディレクトリにあるはずのcontrolファイルから、PackageDataを取得する
+    let package_data = load_debinfo()?;
+    dprintln!("{}", package_data);
     Ok(())
 }
