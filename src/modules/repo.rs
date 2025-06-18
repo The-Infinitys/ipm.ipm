@@ -34,6 +34,11 @@ pub enum RepoType {
     Ipm,
     Apt,
 }
+pub struct RepoSource{
+    repo_type:RepoType,
+    apt:Option<types::apt::Sources>,
+    ipm:Option<URL>,
+}
 impl FromStr for RepoType {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {

@@ -2,6 +2,7 @@ use super::super::{PackageMetaData, RepoData};
 use crate::utils::www::URL;
 use anyhow::{Result, anyhow};
 use chrono::Local;
+use core::fmt;
 use flate2::read::GzDecoder;
 use ipak::modules::{
     pkg::{
@@ -10,8 +11,45 @@ use ipak::modules::{
     },
     version::{Version, VersionRange},
 };
+use ipak::utils::color::colorize::*;
 use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, str::FromStr};
+
+pub struct Sources {
+    uris: URL,
+    suites: Vec<String>,
+    components: Vec<String>,
+    signed_by: Option<String>,
+    architectures: Option<Vec<String>>,
+}
+impl fmt::Display for Sources {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{}: {}",
+            "URIs".bold(),
+            self.uris.to_string()
+        )?;
+        fn join_colored()
+        let colored_suites = {
+            let mut result =
+                Vec::with_capacity(self.suites.len());
+            for suite in self.suites {
+                result.push(suite.green());
+            }
+            result
+        };
+        writeln!(
+            f,
+            "{}: {}",
+            "Suites".bold(),
+            colored_suites.join(", ")
+        )?;
+    }
+}
 
 /// APTパッケージのcontrolファイルを解析し、HashMapに変換します。
 pub fn parse_control_file(
@@ -290,9 +328,10 @@ pub fn fetch(url: URL) -> Result<RepoData, std::io::Error> {
     // HTTPリクエストでPackages.gzをダウンロード
     let response_text =
         packages_url.fetch_bin().map_err(|e| {
-            std::io::Error::other(
-                format!("Failed to fetch Packages.gz: {}", e),
-            )
+            std::io::Error::other(format!(
+                "Failed to fetch Packages.gz: {}",
+                e
+            ))
         })?;
 
     // Gzipを解凍
