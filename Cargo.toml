@@ -9,7 +9,7 @@ ipak = { git = "https://github.com/The-Infinitys/ipm.ipak.git" }
 cmd_arg = { git = "https://github.com/The-Infinitys/rust.cmd-arg.git" }
 chrono = { version = "0.4.41", features = ["serde"] }
 serde = "1.0.219"
-reqwest = { version = "0.12.18", features = ["blocking"] }
+reqwest = { version = "0.12.20", features = ["blocking"] }
 serde_yaml = "0.9.34"
 serde_json = "1.0.140"
 flate2 = "1.1.2"
