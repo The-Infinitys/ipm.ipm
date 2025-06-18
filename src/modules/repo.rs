@@ -45,7 +45,7 @@ impl fmt::Display for RepoSource {
         match self.repo_type {
             RepoType::Apt => {
                 if let Some(ref apt) = self.apt {
-                    write!(f, ", Apt Source: {}", apt)?;
+                    write!(f, ", Apt Source\n {:>2}", apt)?;
                 }
             }
             RepoType::Ipm => {
