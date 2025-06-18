@@ -22,6 +22,13 @@ pub struct Sources {
     signed_by: Option<String>,
     architectures: Option<Vec<String>>,
 }
+fn join_colored(str_vec: &Vec<String>) -> String {
+    let mut result = Vec::with_capacity(str_vec.len());
+    for item in str_vec {
+        result.push(item.green());
+    }
+    result.join(", ")
+}
 impl fmt::Display for Sources {
     fn fmt(
         &self,
@@ -33,21 +40,35 @@ impl fmt::Display for Sources {
             "URIs".bold(),
             self.uris.to_string()
         )?;
-        fn join_colored()
-        let colored_suites = {
-            let mut result =
-                Vec::with_capacity(self.suites.len());
-            for suite in self.suites {
-                result.push(suite.green());
-            }
-            result
-        };
         writeln!(
             f,
             "{}: {}",
             "Suites".bold(),
-            colored_suites.join(", ")
+            join_colored(&self.suites)    
         )?;
+        writeln!(
+            f,
+            "{}: {}",
+            "Components".bold(),
+            join_colored(&self.components)    
+        )?;
+        if let Some(archs) = &self.architectures {
+            writeln!(
+            f,
+            "{}: {}",
+            "Architectures".bold(),
+            join_colored(archs)
+            )?;
+        }
+        if let Some(signed_by) = &self.signed_by {
+            writeln!(
+            f,
+            "{}: {}",
+            "Signed-By".bold(),
+            signed_by.green()
+            )?;
+        }
+        Ok(())
     }
 }
 

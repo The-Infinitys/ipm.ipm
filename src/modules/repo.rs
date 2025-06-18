@@ -34,10 +34,28 @@ pub enum RepoType {
     Ipm,
     Apt,
 }
-pub struct RepoSource{
-    repo_type:RepoType,
-    apt:Option<types::apt::Sources>,
-    ipm:Option<URL>,
+pub struct RepoSource {
+    repo_type: RepoType,
+    apt: Option<types::apt::Sources>,
+    ipm: Option<URL>,
+}
+impl fmt::Display for RepoSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "RepoType: {}", self.repo_type)?;
+        match self.repo_type {
+            RepoType::Apt => {
+                if let Some(ref apt) = self.apt {
+                    write!(f, ", Apt Source: {}", apt)?;
+                }
+            }
+            RepoType::Ipm => {
+                if let Some(ref ipm) = self.ipm {
+                    write!(f, ", IPM URL: {}", ipm)?;
+                }
+            }
+        }
+        Ok(())
+    }
 }
 impl FromStr for RepoType {
     type Err = String;
