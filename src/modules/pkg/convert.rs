@@ -1,14 +1,13 @@
 use super::super::project;
-use super::super::system;
 use cmd_arg::cmd_arg;
 use ipak::dprintln;
 use ipak::modules::project as ipak_project;
 use ipak::utils::archive;
 use std::path::PathBuf;
 use std::{env, fs};
-pub fn convert(
-    args: Vec<&cmd_arg::Option>,
-) -> Result<(), std::io::Error> {
+use tempfile::TempDir;
+
+pub fn convert(args: Vec<&cmd_arg::Option>) -> Result<(), std::io::Error> {
     let mut path_from = String::new();
     let mut path_to = String::new();
     for arg in args {
@@ -33,13 +32,13 @@ pub fn convert(
         path_from.display(),
         path_to.display()
     );
-    let cache_dir = system::path::local::cache_dir();
-    if !cache_dir.is_dir() {
-        fs::create_dir_all(&cache_dir)?;
-    }
-    let dest_path = cache_dir
-        .join(path_from.file_name().unwrap_or_default());
-    let extracted_path = cache_dir.join(format!(
+
+    // 一時ディレクトリを作成
+    let temp_dir = TempDir::new()?;
+    let temp_dir_path = temp_dir.path();
+
+    let dest_path = temp_dir_path.join(path_from.file_name().unwrap_or_default());
+    let extracted_path = temp_dir_path.join(format!(
         "{}{}",
         path_from
             .file_name()
@@ -50,10 +49,9 @@ pub fn convert(
     ));
 
     fs::copy(&path_from, &dest_path)?;
-    if !extracted_path.is_dir() {
-        fs::create_dir_all(&extracted_path)?;
-    }
+    fs::create_dir_all(&extracted_path)?;
     archive::extract_archive(&dest_path, &extracted_path)?;
+
     let original_current = env::current_dir()?;
     env::set_current_dir(&extracted_path)?;
     let convert_result: Result<(), std::io::Error> = {
@@ -69,8 +67,7 @@ pub fn convert(
                 let path = entry.path();
                 if let Some(ext) = path.extension() {
                     if ext == "ipak" {
-                        let file_name =
-                            path.file_name().unwrap();
+                        let file_name = path.file_name().unwrap();
                         let target_path = original_current
                             .join(&path_to)
                             .join(file_name);
@@ -83,6 +80,7 @@ pub fn convert(
     };
     env::set_current_dir(&original_current)?;
     convert_result?;
+
     dprintln!(
         "Copied {} to {}",
         path_from.display(),
