@@ -12,14 +12,18 @@ use ipak::modules::{
     version::{Version, VersionRange},
 };
 use ipak::utils::color::colorize::*;
+use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, str::FromStr};
+#[derive(Debug, Clone, Serialize, Deserialize)]
 
 pub struct Sources {
     uris: URL,
     suites: Vec<String>,
     components: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     signed_by: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     architectures: Option<Vec<String>>,
 }
 fn join_colored(str_vec: &Vec<String>) -> String {
@@ -44,28 +48,28 @@ impl fmt::Display for Sources {
             f,
             "{}: {}",
             "Suites".bold(),
-            join_colored(&self.suites)    
+            join_colored(&self.suites)
         )?;
         writeln!(
             f,
             "{}: {}",
             "Components".bold(),
-            join_colored(&self.components)    
+            join_colored(&self.components)
         )?;
         if let Some(archs) = &self.architectures {
             writeln!(
-            f,
-            "{}: {}",
-            "Architectures".bold(),
-            join_colored(archs)
+                f,
+                "{}: {}",
+                "Architectures".bold(),
+                join_colored(archs)
             )?;
         }
         if let Some(signed_by) = &self.signed_by {
             writeln!(
-            f,
-            "{}: {}",
-            "Signed-By".bold(),
-            signed_by.green()
+                f,
+                "{}: {}",
+                "Signed-By".bold(),
+                signed_by.green()
             )?;
         }
         Ok(())

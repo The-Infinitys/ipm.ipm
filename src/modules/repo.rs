@@ -9,7 +9,6 @@ mod pkg;
 mod server;
 pub mod types;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use std::{fmt, io};
 
 pub fn repo(
@@ -28,53 +27,25 @@ pub fn repo(
     }
     Ok(())
 }
-#[derive(Serialize, Deserialize, Default, Clone, Copy)]
-pub enum RepoType {
-    #[default]
-    Ipm,
-    Apt,
-}
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct RepoSource {
-    repo_type: RepoType,
+    
     apt: Option<types::apt::Sources>,
-    ipm: Option<URL>,
+    ipm: Option<Vec<URL>>,
 }
 impl fmt::Display for RepoSource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RepoType: {}", self.repo_type)?;
-        match self.repo_type {
-            RepoType::Apt => {
-                if let Some(ref apt) = self.apt {
-                    write!(f, ", Apt Source\n {:>2}", apt)?;
-                }
-            }
-            RepoType::Ipm => {
-                if let Some(ref ipm) = self.ipm {
-                    write!(f, ", IPM URL: {}", ipm)?;
-                }
-            }
+        if let Some(ref apt) = self.apt {
+            write!(f, ", Apt Source\n {:>2}", apt)?;
         }
+        if let Some(ref ipm) = self.ipm {
+            write!(f, ", IPM URLs: {}", ipm)?;
+        }
+
         Ok(())
     }
 }
-impl FromStr for RepoType {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_ascii_lowercase().as_str() {
-            "apt" => Ok(Self::Apt),
-            "ipm" => Ok(Self::Ipm),
-            _ => Err(format!("Invalid RepoType: {}", s)),
-        }
-    }
-}
-impl fmt::Display for RepoType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Ipm => write!(f, "ipm"),
-            Self::Apt => write!(f, "apt"),
-        }
-    }
-}
+
 #[derive(Serialize, Deserialize)]
 pub struct RepoData {
     pub author: AuthorAboutData, // pub に変更してテストでアクセス可能に
@@ -98,14 +69,19 @@ pub struct PackageMetaData {
     pub url: String, // pub に変更してテストでアクセス可能に
 }
 impl RepoData {
-    pub fn new(
-        repo_type: RepoType,
-        url: URL,
-    ) -> Result<Self, std::io::Error> {
-        match repo_type {
-            RepoType::Ipm => types::ipm::fetch(url),
-            RepoType::Apt => types::apt::fetch(url),
+    pub fn ipm(data: Vec<URL>) -> Result<Self, std::io::Error> {
+        let mut stacked_error = Vec::with_capacity(data.len());
+        for url in data {
+            let result = types::ipm::fetch(url);
+            match result {
+                Ok(repo_data) => return Ok(repo_data),
+                Err(e) => {
+                    let stringify_error=e.to_string();
+                    stacked_error.push(stringify_error);
+                },
+            }
         }
+        Err(std::io::Error::other(stacked_error.join(", ")))
     }
 }
 impl fmt::Display for PackageMetaData {
@@ -133,66 +109,6 @@ impl fmt::Display for RepoData {
         for package in &self.packages {
             writeln!(f, "{}", package)?;
         }
-        Ok(())
-    }
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_fetch_ipm_repo() -> Result<(), std::io::Error> {
-        println!("Testing IPM Repository Fetch...");
-        let test_url = "https://develop.the-infinitys.f5.si/ipm.official-repo/".to_url().unwrap();
-        let test_repodata =
-            RepoData::new(RepoType::Ipm, test_url.clone())?;
-        println!(
-            "Successfully fetched IPM repo from: {}",
-            test_url
-        );
-        println!("{}", test_repodata);
-        // 基本的なアサーション
-        assert!(
-            !test_repodata.packages.is_empty(),
-            "IPM repo should contain packages."
-        );
-        Ok(())
-    }
-
-    #[test]
-    // #[ignore = "External network dependency, might be slow or unstable"]
-    fn test_fetch_apt_repo() -> Result<(), std::io::Error> {
-        println!("\nTesting APT Repository Fetch...");
-        // Debianの安定版リポジトリのURLを使用
-        let test_url = "https://archive.ubuntu.com/ubuntu/dists/plucky/main/binary-amd64/".to_url().unwrap();
-        let test_repodata =
-            RepoData::new(RepoType::Apt, test_url.clone())?;
-        println!(
-            "Successfully fetched APT repo from: {}",
-            test_url
-        );
-        println!("{}", test_repodata);
-
-        // 基本的なアサーション
-        assert!(
-            !test_repodata.packages.is_empty(),
-            "APT repo should contain packages."
-        );
-        assert!(
-            test_repodata.author.name
-                != AuthorAboutData::default().name,
-            "APT repo author should be set."
-        );
-        assert!(
-            test_repodata.last_modified != Local::now()
-                && (Local::now() - test_repodata.last_modified)
-                    .num_days()
-                    < 365,
-            "APT repo last modified date should be recent."
-        );
-
-        // assert!(apt_package_found, "The 'apt' package should be found in the Debian repository.");
-
         Ok(())
     }
 }
