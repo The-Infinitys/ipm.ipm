@@ -1,11 +1,10 @@
 // src/modules/repo/list.rs
 use crate::modules::repo::PackageMetaData;
 use crate::modules::repo::RepoData;
-use crate::modules::{repo::RepoType, system::path};
+use crate::modules::system::path;
 use crate::utils::www::*;
 use ipak::utils::color::colorize::*;
 use std::fmt;
-use std::str::FromStr;
 
 pub fn packages() -> Result<Vec<PackageMetaData>, std::io::Error>
 {

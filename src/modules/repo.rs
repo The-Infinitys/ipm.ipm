@@ -29,7 +29,6 @@ pub fn repo(
 }
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct RepoSource {
-    
     apt: Option<types::apt::Sources>,
     ipm: Option<Vec<URL>>,
 }
@@ -39,7 +38,14 @@ impl fmt::Display for RepoSource {
             write!(f, ", Apt Source\n {:>2}", apt)?;
         }
         if let Some(ref ipm) = self.ipm {
-            write!(f, ", IPM URLs: {}", ipm)?;
+            write!(
+                f,
+                ", IPM URLs: {}",
+                ipm.iter()
+                    .map(|url| { url.to_string() })
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
         }
 
         Ok(())
@@ -76,9 +82,9 @@ impl RepoData {
             match result {
                 Ok(repo_data) => return Ok(repo_data),
                 Err(e) => {
-                    let stringify_error=e.to_string();
+                    let stringify_error = e.to_string();
                     stacked_error.push(stringify_error);
-                },
+                }
             }
         }
         Err(std::io::Error::other(stacked_error.join(", ")))
