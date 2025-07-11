@@ -592,6 +592,7 @@ dependencies = [
 name = "ipm"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "ipak",
 ]
 
