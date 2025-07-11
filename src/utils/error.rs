@@ -33,10 +33,10 @@ impl fmt::Display for ErrorKind {
         match self {
             Self::Other => write!(f, "Other"),
             Self::Io(io_errorkind) => {
-                write!(f, "IO-{}", io_errorkind)
+                write!(f, "IO-{io_errorkind}")
             }
             Self::Ipak(ipak_err) => {
-                write!(f, "{}", ipak_err)
+                write!(f, "{ipak_err}")
             }
         }
     }
@@ -137,7 +137,7 @@ impl Error {
                 let formatted_message = self
                     .message
                     .split("\n")
-                    .map(|line| format!("    {}", line))
+                    .map(|line| format!("    {line}"))
                     .collect::<Vec<String>>()
                     .join("\n");
                 write!(
