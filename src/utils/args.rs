@@ -18,18 +18,21 @@ use crate::ipak::args::{
 #[derive(Subcommand, Debug)]
 
 pub enum Commands {
-    /// Manage projects. / プロジェクトを管理します。
+    /// Manage projects.
     #[command(subcommand)]
     Project(ProjectCommands),
-    /// Configure system settings. / システム設定を構成します。
+    /// Configure system settings.
     #[command(subcommand)]
     System(SystemCommands),
-    /// Utility commands. / ユーティリティコマンド。
+    /// Utility commands.
     #[command(subcommand)]
     Utils(UtilsCommands),
-    /// Manage packages. / パッケージを管理します。
+    /// Manage packages.
     #[command(subcommand)]
     Pkg(PkgCommands),
+    /// Manage Repositories
+    #[command(subcommand)]
+    Repo(RepoCommands),
 }
 
 use crate::utils::error::Error;
@@ -49,9 +52,17 @@ impl CommandExecution for Commands {
             Self::Utils(utils_cmd) => {
                 utils_cmd.exec().map_err(Error::from)
             }
+            Self::Repo(repo_cmd) => repo_cmd.exec(),
         }
     }
 }
 pub trait CommandExecution {
     fn exec(self) -> Result<(), Error>;
+}
+#[derive(Subcommand, Debug)]
+pub enum RepoCommands {}
+impl CommandExecution for RepoCommands {
+    fn exec(self) -> Result<(), Error> {
+        crate::modules::repo::repo(self)
+    }
 }
